@@ -1,0 +1,32 @@
++ - * / ! =
+!= == < > <= >= || &&
+()[]{}
+:;,.
+
+0 1 100 1000 -10
+0.0 3.1415 148.012 -0.8123
+"foo" "bar" "Hello, World!" "this is \"escaped\""
+true false
+nil
+
+if else var func return
+println
+
+
+var x = 10;
+var PI = 3.14;
+var snake_case_var = 105;
+
+5 + 4 - 3 * 2 / 1;
+
+if (true) {
+    x = x * 2;
+} else {
+    x = x / 2;
+}
+
+var sqaure = func(n) {
+    return n * n;
+};
+
+println("Hello, World!");
