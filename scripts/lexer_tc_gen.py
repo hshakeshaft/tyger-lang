@@ -295,8 +295,8 @@ class Lexer:
                 elif self.ch.isalpha():
                     ident_len = self.read_ident()
                     t.literal_len = ident_len
-                    word = self.prog[t.pos:ident_len + 1]
-                    print("\t", word)
+                    word = self.prog[t.pos:t.pos + ident_len]
+
                     kind = KEWYORDS_BUILTIN.get(word)
                     if kind is not None:
                         t.kind = kind
