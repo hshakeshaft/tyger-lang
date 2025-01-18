@@ -14,18 +14,7 @@ import enum
 from dataclasses import dataclass
 
 #
-# read file
-#
-FNAME = "prog.tyger"
-content = None
-with open(FNAME, "r") as f:
-    content = f.read()
-
-print(content)
-print("=" * 80)
-
-#
-# lex input
+# Token kind and symbol lookup
 #
 class TokenKind(enum.Enum):
     def __str__(self):
@@ -125,6 +114,10 @@ KEWYORDS_BUILTIN = {
     "println": TokenKind.println,
 }
 
+
+#
+# Token and lexer
+#
 @dataclass
 class Token:
     pos: int
@@ -185,7 +178,6 @@ class Lexer:
             elif self.ch == "\r":
                 if self.peek_char() == "\n":
                     self.read_pos += 1
-                self.pos += 1
                 self.line += 1
                 self.col = 1
             else:
@@ -321,7 +313,17 @@ class Lexer:
         return t
 
 
-# content = "+ - =="
+#
+# read file
+#
+FNAME = "prog.tyger"
+content = None
+with open(FNAME, "r") as f:
+    content = f.read()
+
+assert content is not None
+
+# content = "var x = 10;\nvar y = 2;\n"
 l = Lexer(content)
 
 tokens = []
@@ -330,6 +332,15 @@ while True:
     if tokens[-1].kind == TokenKind.Eof:
         break
 
+#
+# Print out the genearated code
+#
+print("const char *prog = \\")
+for line in content.split("\n"):
+    print(f"\"{line}\\n\"")
+print(";", "\n")
 
+print("auto expected_tokens = std::vector<Token>{")
 for t in tokens:
-    print(f"( \"{t.lit(content)}\" )", t)
+    print(f"    {t}, ")
+print("};")
