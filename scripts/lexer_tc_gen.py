@@ -344,3 +344,10 @@ print("auto expected_tokens = std::vector<Token>{")
 for t in tokens:
     print(f"    {t}, ")
 print("};")
+
+print()
+
+print("typedef enum\n{")
+for kn in list(TokenKind):
+    print(f"    {kn},")
+print("} Token_Kind;")
