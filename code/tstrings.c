@@ -3,7 +3,7 @@
 
 size_t string_nlen(const char *str, size_t max_len)
 {
-    size_t len = 1;
+    size_t len = 0;
     size_t i = 0;
 
     for (;;)

@@ -10,6 +10,8 @@ TEST(String_Functions, String_N_Len)
     EXPECT_EQ(string_nlen(s, 5), 5);
     EXPECT_EQ(string_nlen(s, 7), 7);
     EXPECT_EQ(string_nlen(s, 10), 10);
+    EXPECT_EQ(string_nlen("\0", 10), 0);
+    EXPECT_EQ(string_nlen("pub\0fn", 10), 3);
 }
 
 TEST(String_View_Test_Suite, Test_String_View_from_cstr)
@@ -65,22 +67,35 @@ TEST(String_View_Test_Suite, Test_String_View_compare)
 
 TEST(String_View_Test_Suite, Test_String_View_compare_cstr)
 {
-    char buff[10];
+    auto test_eq = [] (String_View actual, const char *expected, bool should_match = true) {
+        char buff[10];
+        snprintf(buff, sizeof(buff), sv_fmt, sv_args(actual));
+
+        if (should_match)
+        {
+            EXPECT_TRUE(string_view_eq_cstr(actual, expected))
+                << "Expected String_View \"" << buff 
+                << "\" to match string \"" << expected << "\"";
+        }
+        else
+        {
+            EXPECT_FALSE(string_view_eq_cstr(actual, expected))
+                << "Expected String_View \"" << buff 
+                << "\" not to match string \"" << expected << "\"";
+        }
+    };
+
     const char *str = "pub fn main";
 
-    const char *tc0 = "pubn";
-    const char *tc1 = "pub";
-    // const char *tc2 = "fn";
-    // const char *tc3 = "main";
+    String_View sv = string_view_from_cstr_offset(str, 0, 3); 
+    test_eq(sv, "pubn", false);
 
-    String_View s1 = string_view_from_cstr_offset(str, 0, 3); 
+    sv = string_view_from_cstr_offset(str, 0, 3); 
+    test_eq(sv, "pub");
 
-    snprintf(buff, sizeof(buff), sv_fmt, sv_args(s1));
-    EXPECT_FALSE(string_view_eq_cstr(s1, tc0))
-        << "Expected String_View \"" << buff 
-        << "\" not to match string \"" << tc0 << "\"";
+    sv = string_view_from_cstr_offset(str, 4, 2); 
+    test_eq(sv, "fn");
 
-    EXPECT_TRUE(string_view_eq_cstr(s1, tc1))
-        << "Expected String_View \"" << buff 
-        << "\" to match string \"" << tc1 << "\"";
+    sv = string_view_from_cstr_offset(str, 7, 4); 
+    test_eq(sv, "main");
 }
