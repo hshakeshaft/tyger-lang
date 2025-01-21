@@ -136,7 +136,7 @@ class Token:
             .literal = String_View{ &prog[<pos>], <len> }
         }
         """
-        return "Token{{ {}, {{ {}, {}, {} }}, {{ &prog[{}], {} }} }}".format(
+        return "Token{{ {}, {{ {}, {}, {} }}, {{ (char*) &prog[{}], {} }} }}".format(
             self.kind, 
             self.pos, self.line, self.col, 
             self.pos, self.literal_len
