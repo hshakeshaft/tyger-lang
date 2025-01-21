@@ -4,6 +4,31 @@
 
 #include "tstrings.h"
 
+///
+/// character test data
+///
+const auto whitespace_chars = std::vector<char>{
+    '\n', '\r', '\t', ' ', 
+};
+
+const auto alpha_chars = std::vector<char>{
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 
+};
+
+const auto number_chars = std::vector<char>{
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+};
+
+const auto puntuation_chars = std::vector<char>{
+    ';', ':', ',', '.', 
+};
+
+
+///
+/// Tests
+///
+
 TEST(String_Functions, String_N_Len)
 {
     const char *s = "Hello, World!\n";
@@ -12,6 +37,62 @@ TEST(String_Functions, String_N_Len)
     EXPECT_EQ(string_nlen(s, 10), 10);
     EXPECT_EQ(string_nlen("\0", 10), 0);
     EXPECT_EQ(string_nlen("pub\0fn", 10), 3);
+}
+
+TEST(String_Functions, Char_Is_Whitespace)
+{
+    for (char ch : whitespace_chars) { EXPECT_TRUE(is_whitespace(ch)); }
+
+    for (char ch : alpha_chars) { EXPECT_FALSE(is_whitespace(ch)); }
+    for (char ch : number_chars) { EXPECT_FALSE(is_whitespace(ch)); }
+    for (char ch : puntuation_chars) { EXPECT_FALSE(is_whitespace(ch)); }
+}
+
+TEST(String_Functions, Char_Is_Numeric)
+{
+    for (char ch : number_chars)     { EXPECT_TRUE(is_numeric(ch)); }
+
+    for (char ch : alpha_chars)      { EXPECT_FALSE(is_numeric(ch)); }
+    for (char ch : whitespace_chars) { EXPECT_FALSE(is_numeric(ch)); }
+    for (char ch : puntuation_chars) { EXPECT_FALSE(is_numeric(ch)); }
+
+}
+
+TEST(String_Functions, Char_Is_Alphabetic)
+{
+    for (char ch : alpha_chars)      { EXPECT_TRUE(is_alpha(ch)); }
+
+    for (char ch : whitespace_chars) { EXPECT_FALSE(is_alpha(ch)); }
+    for (char ch : number_chars)     { EXPECT_FALSE(is_alpha(ch)); }
+    for (char ch : puntuation_chars) { EXPECT_FALSE(is_alpha(ch)); }
+}
+
+TEST(String_Functions, Char_Is_Alphanumeric)
+{
+    for (char ch : alpha_chars)      { EXPECT_TRUE(is_alphanumeric(ch)); }
+    for (char ch : number_chars)     { EXPECT_TRUE(is_alphanumeric(ch)); }
+
+    for (char ch : whitespace_chars) { EXPECT_FALSE(is_alphanumeric(ch)); }
+    for (char ch : puntuation_chars) { EXPECT_FALSE(is_alphanumeric(ch)); }
+}
+
+TEST(String_Functions, Char_Is_Punctuation)
+{
+    for (char ch : puntuation_chars) { EXPECT_TRUE(is_punctuation(ch)); }
+
+    for (char ch : whitespace_chars) { EXPECT_FALSE(is_punctuation(ch)); }
+    for (char ch : alpha_chars)      { EXPECT_FALSE(is_punctuation(ch)); }
+    for (char ch : number_chars)     { EXPECT_FALSE(is_punctuation(ch)); }
+}
+
+TEST(String_Functions, Char_Is_End_Of_Input)
+{
+    ASSERT_TRUE(is_end_of_input('\0'));
+
+    for (char ch : whitespace_chars) { EXPECT_FALSE(is_end_of_input(ch)); }
+    for (char ch : alpha_chars)      { EXPECT_FALSE(is_end_of_input(ch)); }
+    for (char ch : number_chars)     { EXPECT_FALSE(is_end_of_input(ch)); }
+    for (char ch : puntuation_chars) { EXPECT_FALSE(is_end_of_input(ch)); }
 }
 
 TEST(String_View_Test_Suite, Test_String_View_from_cstr)

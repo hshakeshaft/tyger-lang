@@ -65,3 +65,43 @@ bool string_view_eq_cstr(String_View sv, const char *s)
 
     return true;
 }
+
+inline bool is_whitespace(const char c)
+{
+    return c == '\n' || c == '\r' || c == '\t' || c == ' ';
+}
+
+inline bool is_numeric(const char c)
+{
+    return ('0' <= c && c <= '9');
+}
+
+inline bool is_alpha(const char c)
+{
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+}
+
+inline bool is_alphanumeric(const char c)
+{
+    return is_alpha(c) || is_numeric(c);
+}
+
+inline bool is_punctuation(const char c)
+{
+    bool result = false;
+    const char punctuation[] = ";:,.";
+    for (size_t i = 0; i < (sizeof(punctuation) / sizeof(punctuation[0])); ++i)
+    {
+        if (c == punctuation[i])
+        {
+            result = true;
+            break;
+        }
+    }
+    return result;
+}
+
+inline bool is_end_of_input(const char c)
+{
+    return c == '\0';
+}

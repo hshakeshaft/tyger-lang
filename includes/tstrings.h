@@ -24,6 +24,14 @@ String_View string_view_from_cstr_offset(const char *str, size_t offset, size_t 
 bool string_view_eq(String_View s1, String_View s2);
 bool string_view_eq_cstr(String_View sv, const char *s);
 
+// NOTE(HS): all assume ASCII encoding
+bool is_whitespace(const char c);
+bool is_numeric(const char c);
+bool is_alpha(const char c);
+bool is_alphanumeric(const char c);
+bool is_punctuation(const char c);
+bool is_end_of_input(const char c);
+
 #if defined(__cplusplus)
 }
 #endif
