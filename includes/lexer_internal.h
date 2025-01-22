@@ -6,4 +6,6 @@ void lexer_read_char(Lexer *lexer);
 char lexer_peek_char(const Lexer *lexer);
 void lexer_skip_whitespace(Lexer *lexer);
 
+void lexer_read_integer(Lexer *lexer);
+
 #endif // TYGER_LEXER_INTERNAL_H_

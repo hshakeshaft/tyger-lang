@@ -236,7 +236,19 @@ Token lexer_next_token(Lexer *lexer)
 
         default:
         {
-            token.kind = TK_ILLEGAL;
+            if (is_numeric(lexer->ch))
+            {
+                size_t pos = lexer->location.pos;
+                lexer_read_integer(lexer);
+                size_t len = lexer->location.pos - pos;
+                token.literal.length = len;
+                token.kind = TK_INT_LIT;
+                return token;
+            }
+            else
+            {
+                token.kind = TK_ILLEGAL;
+            }
         } break;
     }
 
@@ -293,6 +305,14 @@ inline char lexer_peek_char(const Lexer *lexer)
 void lexer_skip_whitespace(Lexer *lexer)
 {
     while (is_whitespace(lexer->ch))
+    {
+        lexer_read_char(lexer);
+    }
+}
+
+void lexer_read_integer(Lexer *lexer)
+{
+    while (is_numeric(lexer->ch) && !is_end_of_input(lexer->ch))
     {
         lexer_read_char(lexer);
     }
