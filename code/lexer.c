@@ -239,10 +239,9 @@ Token lexer_next_token(Lexer *lexer)
             if (is_numeric(lexer->ch))
             {
                 size_t pos = lexer->location.pos;
-                lexer_read_integer(lexer);
-                size_t len = lexer->location.pos - pos;
-                token.literal.length = len;
-                token.kind = TK_INT_LIT;
+                lexer_read_number(lexer);
+                token.literal.length = lexer->location.pos - pos;
+                token.kind = string_view_to_number_kind(token.literal);
                 return token;
             }
             else
@@ -310,10 +309,35 @@ void lexer_skip_whitespace(Lexer *lexer)
     }
 }
 
-void lexer_read_integer(Lexer *lexer)
+void lexer_read_number(Lexer *lexer)
 {
-    while (is_numeric(lexer->ch) && !is_end_of_input(lexer->ch))
+    while ((is_numeric(lexer->ch) || lexer->ch == '.') && !is_end_of_input(lexer->ch))
     {
         lexer_read_char(lexer);
     }
+}
+
+Token_Kind string_view_to_number_kind(String_View sv)
+{
+    int decimal_point_count = 0;
+    Token_Kind kind = TK_ILLEGAL;
+
+    for (size_t i = 0; i < sv.length; ++i)
+    {
+        if (sv.str[i] == '.')
+        {
+            decimal_point_count += 1;
+        }
+    }
+
+    if (decimal_point_count == 0)
+    {
+        kind = TK_INT_LIT;
+    }
+    else if (decimal_point_count == 1)
+    {
+        kind = TK_FLOAT_LIT;
+    }
+
+    return kind;
 }
