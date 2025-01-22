@@ -96,6 +96,56 @@ Token lexer_next_token(Lexer *lexer)
             token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
+        br_case('(', {
+            token.kind = TK_LPAREN;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case(')', {
+            token.kind = TK_RPAREN;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case('{', {
+            token.kind = TK_LBRACE;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case('}', {
+            token.kind = TK_RBRACE;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case('[', {
+            token.kind = TK_LBRACKET;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case(']', {
+            token.kind = TK_RBRACKET;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case(':', {
+            token.kind = TK_COLON;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case(';', {
+            token.kind = TK_SEMICOLON;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case(',', {
+            token.kind = TK_COMMA;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
+        br_case('.', {
+            token.kind = TK_PERIOD;
+            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+        });
+
         br_case('+', {
             token.kind = TK_PLUS;
             token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
