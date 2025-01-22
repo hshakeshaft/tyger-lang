@@ -393,9 +393,15 @@ Token_Kind string_view_to_ident_or_keyword(String_View sv)
 
     Token_Kind kind = TK_IDENT;
 
-    if      (sveq("true"))  kind = TK_TRUE;
-    else if (sveq("false")) kind = TK_FALSE;
-    else if (sveq("nil"))   kind = TK_NIL;
+    if      (sveq("true"))    { kind = TK_TRUE;    }
+    else if (sveq("false"))   { kind = TK_FALSE;   }
+    else if (sveq("nil"))     { kind = TK_NIL;     }
+    else if (sveq("if"))      { kind = TK_IF;      }
+    else if (sveq("else"))    { kind = TK_ELSE;    }
+    else if (sveq("func"))    { kind = TK_FUNC;    }
+    else if (sveq("var"))     { kind = TK_VAR;     }
+    else if (sveq("return"))  { kind = TK_RETURN;  }
+    else if (sveq("println")) { kind = TK_PRINTLN; }
 
     return kind;
 }
