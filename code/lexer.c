@@ -234,6 +234,15 @@ Token lexer_next_token(Lexer *lexer)
             }
         });
 
+        br_case('\"', {
+            lexer_read_char(lexer);
+            size_t pos = lexer->location.pos;
+            lexer_read_string(lexer);
+            size_t len = lexer->location.pos - pos;
+            token.literal = string_view_from_cstr_offset(lexer->input, pos, len);
+            token.kind = TK_STRING_LIT;
+        });
+
         default:
         {
             if (is_numeric(lexer->ch))
@@ -314,6 +323,25 @@ void lexer_read_number(Lexer *lexer)
     while ((is_numeric(lexer->ch) || lexer->ch == '.') && !is_end_of_input(lexer->ch))
     {
         lexer_read_char(lexer);
+    }
+}
+
+void lexer_read_string(Lexer *lexer)
+{
+    while (lexer->ch != '\"' && !is_end_of_input(lexer->ch))
+    {
+        if (lexer->ch == '\\')
+        {
+            if (lexer_peek_char(lexer) == '\"')
+            {
+                lexer_read_char(lexer);
+                lexer_read_char(lexer);
+            }
+        }
+        else
+        {
+            lexer_read_char(lexer);
+        }
     }
 }
 

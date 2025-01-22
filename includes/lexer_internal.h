@@ -8,6 +8,7 @@ char lexer_peek_char(const Lexer *lexer);
 void lexer_skip_whitespace(Lexer *lexer);
 
 void lexer_read_number(Lexer *lexer);
+void lexer_read_string(Lexer *lexer);
 
 Token_Kind string_view_to_number_kind(String_View sv);
 
