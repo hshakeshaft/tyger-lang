@@ -89,94 +89,83 @@ Token lexer_next_token(Lexer *lexer)
             __VA_ARGS__        \
         } break
 
+    // NOTE(HS): default for most characters is to generate something of length 1,
+    // this can simply be updated after initial allocation if required, e.g. for
+    // `!=`, `==`, and `<=`.
+    token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
+
     switch (lexer->ch)
     {
         br_case('\0', {
             token.kind = TK_EOF;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('(', {
             token.kind = TK_LPAREN;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case(')', {
             token.kind = TK_RPAREN;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('{', {
             token.kind = TK_LBRACE;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('}', {
             token.kind = TK_RBRACE;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('[', {
             token.kind = TK_LBRACKET;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case(']', {
             token.kind = TK_RBRACKET;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case(':', {
             token.kind = TK_COLON;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case(';', {
             token.kind = TK_SEMICOLON;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case(',', {
             token.kind = TK_COMMA;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('.', {
             token.kind = TK_PERIOD;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('+', {
             token.kind = TK_PLUS;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
         
         br_case('-', {
             token.kind = TK_MINUS;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('*', {
             token.kind = TK_ASTERISK;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('/', {
             token.kind = TK_SLASH;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         });
 
         br_case('!', {
             if (lexer_peek_char(lexer) == '=')
             {
                 token.kind = TK_NEQ;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 2);
+                token.literal.length = 2;
                 lexer_read_char(lexer);
             }
             else
             {
                 token.kind = TK_BANG;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
             }
         });
 
@@ -184,13 +173,12 @@ Token lexer_next_token(Lexer *lexer)
             if (lexer_peek_char(lexer) == '=')
             {
                 token.kind = TK_EQ;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 2);
+                token.literal.length = 2;
                 lexer_read_char(lexer);
             }
             else
             {
                 token.kind = TK_ASSIGN;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
             }
         });
 
@@ -198,13 +186,12 @@ Token lexer_next_token(Lexer *lexer)
             if (lexer_peek_char(lexer) == '=')
             {
                 token.kind = TK_LTE;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 2);
+                token.literal.length = 2;
                 lexer_read_char(lexer);
             }
             else
             {
                 token.kind = TK_LT;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
             }
         });
 
@@ -212,13 +199,12 @@ Token lexer_next_token(Lexer *lexer)
             if (lexer_peek_char(lexer) == '=')
             {
                 token.kind = TK_GTE;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 2);
+                token.literal.length = 2;
                 lexer_read_char(lexer);
             }
             else
             {
                 token.kind = TK_GT;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
             }
         });
 
@@ -226,13 +212,12 @@ Token lexer_next_token(Lexer *lexer)
             if (lexer_peek_char(lexer) == '|')
             {
                 token.kind = TK_LOR;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 2);
+                token.literal.length = 2;
                 lexer_read_char(lexer);
             }
             else
             {
                 token.kind = TK_ILLEGAL;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
             }
         });
 
@@ -240,20 +225,18 @@ Token lexer_next_token(Lexer *lexer)
             if (lexer_peek_char(lexer) == '&')
             {
                 token.kind = TK_LAND;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 2);
+                token.literal.length = 2;
                 lexer_read_char(lexer);
             }
             else
             {
                 token.kind = TK_ILLEGAL;
-                token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
             }
         });
 
         default:
         {
             token.kind = TK_ILLEGAL;
-            token.literal = string_view_from_cstr_offset(lexer->input, lexer->location.pos, 1);
         } break;
     }
 
