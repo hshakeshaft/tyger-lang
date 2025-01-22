@@ -254,6 +254,14 @@ Token lexer_next_token(Lexer *lexer)
                 token.kind = string_view_to_number_kind(token.literal);
                 return token;
             }
+            else if (is_alpha(lexer->ch))
+            {
+                size_t pos = lexer->location.pos;
+                lexer_read_ident(lexer);
+                token.literal.length = lexer->location.pos - pos;
+                token.kind = string_view_to_ident_or_keyword(token.literal);
+                return token;
+            }
             else
             {
                 token.kind = TK_ILLEGAL;
@@ -346,6 +354,14 @@ void lexer_read_string(Lexer *lexer)
     }
 }
 
+void lexer_read_ident(Lexer *lexer)
+{
+    while (is_alpha(lexer->ch) && !is_end_of_input(lexer->ch))
+    {
+        lexer_read_char(lexer);
+    }
+}
+
 Token_Kind string_view_to_number_kind(String_View sv)
 {
     int decimal_point_count = 0;
@@ -367,6 +383,19 @@ Token_Kind string_view_to_number_kind(String_View sv)
     {
         kind = TK_FLOAT_LIT;
     }
+
+    return kind;
+}
+
+Token_Kind string_view_to_ident_or_keyword(String_View sv)
+{
+    #define sveq(S) string_view_eq_cstr(sv, (S))
+
+    Token_Kind kind = TK_IDENT;
+
+    if      (sveq("true"))  kind = TK_TRUE;
+    else if (sveq("false")) kind = TK_FALSE;
+    else if (sveq("nil"))   kind = TK_NIL;
 
     return kind;
 }

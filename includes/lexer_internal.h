@@ -9,7 +9,9 @@ void lexer_skip_whitespace(Lexer *lexer);
 
 void lexer_read_number(Lexer *lexer);
 void lexer_read_string(Lexer *lexer);
+void lexer_read_ident(Lexer *lexer);
 
 Token_Kind string_view_to_number_kind(String_View sv);
+Token_Kind string_view_to_ident_or_keyword(String_View sv);
 
 #endif // TYGER_LEXER_INTERNAL_H_
