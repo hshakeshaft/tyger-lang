@@ -237,8 +237,9 @@ Token lexer_next_token(Lexer *lexer)
         br_case('\"', {
             lexer_read_char(lexer);
             size_t pos = lexer->location.pos;
+            token.location = lexer->location;
             lexer_read_string(lexer);
-            size_t len = lexer->location.pos - pos;
+            size_t len = lexer->location.pos - token.location.pos;
             token.literal = string_view_from_cstr_offset(lexer->input, pos, len);
             token.kind = TK_STRING_LIT;
         });
