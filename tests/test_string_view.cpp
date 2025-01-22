@@ -173,6 +173,7 @@ TEST(String_View_Test_Suite, Test_String_View_compare_cstr)
 
     sv = string_view_from_cstr_offset(str, 0, 3); 
     test_eq(sv, "pub");
+    test_eq(sv, "bup", false);
 
     sv = string_view_from_cstr_offset(str, 4, 2); 
     test_eq(sv, "fn");

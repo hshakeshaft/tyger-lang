@@ -52,18 +52,31 @@ bool string_view_eq(String_View s1, String_View s2)
 
 bool string_view_eq_cstr(String_View sv, const char *s)
 {
+    bool result = false;
+
     if (!s || s == NULL || *s == '\0')
     {
-        return false;
+        return result;
     }
 
     size_t s_len = string_nlen(s, 100);
     if (sv.length != s_len)
     {
-        return false;
+        return result;
     }
 
-    return true;
+    size_t match_count = 0;
+    for (size_t i = 0; i < sv.length; ++i)
+    {
+        if (sv.str[i] != s[i])
+        {
+            break;
+        }
+        match_count += 1;
+    }
+
+    result = match_count == sv.length;
+    return result;
 }
 
 inline bool is_whitespace(const char c)
