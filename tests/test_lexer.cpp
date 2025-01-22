@@ -177,9 +177,9 @@ TEST(LexerTestSuite, test_lexer)
             << std::endl;
 
         // assert read from correct location
-        ASSERT_EQ(expected.location.pos,  actual.location.pos);
-        ASSERT_EQ(expected.location.line, actual.location.line);
-        ASSERT_EQ(expected.location.col,  actual.location.col);
+        EXPECT_EQ(expected.location.pos,  actual.location.pos);
+        EXPECT_EQ(expected.location.line, actual.location.line);
+        EXPECT_EQ(expected.location.col,  actual.location.col);
 
         // assert literals are the same
         // TODO(HS): check literals pointed to are equal
