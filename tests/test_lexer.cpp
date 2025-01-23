@@ -5,7 +5,7 @@
 #include "tstrings.h"
 #include "lexer.h"
 
-const char *prog =
+const char *prog = \
     "+ - * / ! =\n"
     "!= == < > <= >= || &&\n"
     "()[]{}\n"
@@ -37,8 +37,7 @@ const char *prog =
     "    return n * n;\n"
     "};\n"
     "\n"
-    "println(\"Hello, World!\");\n"
-    "\n";
+    "println(\"Hello, World!\");\n";
 
 auto expected_tokens = std::vector<Token>{
     Token{ TK_PLUS, { 0, 1, 1 }, { (char*) &prog[0], 1 } },
@@ -196,5 +195,5 @@ TEST(LexerTestSuite, test_lexer)
         expected_index += 1;
     } while (actual.kind != TK_EOF && expected_index < expected_tokens.size());
 
-    ASSERT_EQ((expected_index + 1), expected_tokens.size());
+    ASSERT_EQ((expected_index), expected_tokens.size());
 }
