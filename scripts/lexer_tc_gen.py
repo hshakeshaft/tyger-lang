@@ -335,11 +335,34 @@ while True:
 #
 # Print out the genearated code
 #
-print("const char *prog = \\")
-for line in content.split("\n"):
-    print(f"\"{line}\\n\"")
-print(";", "\n")
 
+# NOTE(HS): this is to do proper escaping
+prog_chars = []
+for line in content.split("\n"):
+    prog_chars.append("\"")
+    for c in line:
+        if c == "\\":
+            prog_chars.append("\\\\")
+        elif c == "\"":
+            prog_chars.append("\\\"")
+        else:
+            prog_chars.append(c)
+    prog_chars.append("\\n\"")
+    prog_chars.append("\n")
+
+# NOTE(HS): this is to get around insertion of additional "\" and "\\n" chars
+prog_chars = prog_chars[:-3]
+content = ''.join(c for c in prog_chars)
+
+print("const char *prog = \\")
+print(content, end="")
+print(";")
+
+print()
+
+#
+# print test case as std::vector<Token>
+#
 print("auto expected_tokens = std::vector<Token>{")
 for t in tokens:
     print(f"    {t}, ")
@@ -347,6 +370,9 @@ print("};")
 
 print()
 
+#
+# print enumeration values as C-enum
+#
 print("typedef enum\n{")
 for kn in list(TokenKind):
     print(f"    {kn},")
