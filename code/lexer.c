@@ -356,7 +356,7 @@ void lexer_read_string(Lexer *lexer)
 
 void lexer_read_ident(Lexer *lexer)
 {
-    while (is_alpha(lexer->ch) && !is_end_of_input(lexer->ch))
+    while ((is_alpha(lexer->ch) || lexer->ch == '_') && !is_end_of_input(lexer->ch))
     {
         lexer_read_char(lexer);
     }
