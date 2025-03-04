@@ -115,6 +115,9 @@ void ast_free_node(Statement *stmt)
             free((void*) stmt->stmt.var_statement.ident);
         } break;
 
+        case AST_RETURN_STATEMENT:
+        {} break;
+
         default:
         {
             assert(0 && "Invalid statement kind to free");
@@ -130,6 +133,11 @@ Statement parse_statement(Parser *p)
         case TK_VAR:
         {
             stmt = parse_var_statement(p);
+        } break;
+
+        case TK_RETURN:
+        {
+            stmt = parse_return_statement(p);
         } break;
 
         default:
@@ -170,6 +178,24 @@ Statement parse_var_statement(Parser *p)
     }
 
     // TODO(HS): handle properly when expressions are parsed
+    while (!cur_token_is(p, TK_SEMICOLON))
+    {
+        parser_next_token(p);
+    }
+
+    return stmt;
+}
+
+Statement parse_return_statement(Parser *p)
+{
+    Statement stmt;
+
+    stmt.kind = AST_RETURN_STATEMENT;
+
+    stmt.stmt.return_statement = (Return_Statement) {
+        .token = p->cur_token,
+    };
+
     while (!cur_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);

@@ -17,5 +17,6 @@ Statement make_illegal(Parser *p);
 
 Statement parse_statement(Parser *p);
 Statement parse_var_statement(Parser *p);
+Statement parse_return_statement(Parser *p);
 
 #endif // TYGER_PARSER_INTERNAL_H_

@@ -4,7 +4,8 @@
 
 #define AST_STATEMENT_KIND_LIST \
     X(ILLGEAL_STATEMENT)        \
-    X(VAR_STATEMENT)
+    X(VAR_STATEMENT)            \
+    X(RETURN_STATEMENT)
 
 typedef enum
 {
@@ -25,10 +26,17 @@ typedef struct
     // TODO(HS): add expression
 } Var_Statement;
 
+typedef struct
+{
+    Token token;
+    // TODO(HS): add expression
+} Return_Statement;
+
 typedef union
 {
     Illegal_statement illegal_statement;
     Var_Statement var_statement;
+    Return_Statement return_statement;
 } uStatement;
 
 typedef struct
