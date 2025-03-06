@@ -5,7 +5,11 @@
 #define AST_STATEMENT_KIND_LIST \
     X(ILLGEAL_STATEMENT)        \
     X(VAR_STATEMENT)            \
-    X(RETURN_STATEMENT)
+    X(RETURN_STATEMENT)         \
+    X(EXPRESSION_STATEMENT)
+
+#define AST_EXPRESSION_KIND_LIST \
+    X(IDENT_EXPRESSION)
 
 typedef enum
 {
@@ -13,6 +17,30 @@ typedef enum
     AST_STATEMENT_KIND_LIST
     #undef X
 } Statement_Kind;
+
+typedef enum
+{
+    #define X(NAME) AST_##NAME,
+    AST_EXPRESSION_KIND_LIST
+    #undef X
+} Expression_Kind;
+
+typedef struct
+{
+    const char *ident;
+} Ident_Expression;
+
+typedef union
+{
+    Ident_Expression ident_expression;
+} uExpression;
+
+typedef struct
+{
+    Expression_Kind kind;
+    uExpression expr;
+    uExpression *next_expr;
+} Expression;
 
 
 typedef struct
@@ -32,11 +60,17 @@ typedef struct
     // TODO(HS): add expression
 } Return_Statement;
 
+typedef struct
+{
+    Expression expression;
+} Expression_Statement;
+
 typedef union
 {
     Illegal_statement illegal_statement;
     Var_Statement var_statement;
     Return_Statement return_statement;
+    Expression_Statement expression_statement;
 } uStatement;
 
 typedef struct
@@ -51,6 +85,7 @@ extern "C" {
 #endif
 
 const char *ast_statement_kind_to_str(Statement_Kind k);
+const char *ast_expression_kind_to_str(Expression_Kind k);
 
 void ast_free_node(Statement *stmt);
 

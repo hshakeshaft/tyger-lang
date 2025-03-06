@@ -2,7 +2,13 @@
 #define TYGER_PARSER_INTERNAL_H_
 #include <stdbool.h>
 
+#include "ast.h"
 #include "parser.h"
+
+typedef enum
+{
+    LOWEST = 0,
+} Operator_Precidence;
 
 bool cur_token_is(Parser *p, Token_Kind kind);
 bool peek_token_is(Parser *p, Token_Kind kind);
@@ -18,5 +24,10 @@ Statement make_illegal(Parser *p);
 Statement parse_statement(Parser *p);
 Statement parse_var_statement(Parser *p);
 Statement parse_return_statement(Parser *p);
+Statement parse_expression_statement(Parser *p);
+
+Expression parse_expression(Parser *p, Operator_Precidence precidence);
+
+Ident_Expression parse_ident(Parser *p);
 
 #endif // TYGER_PARSER_INTERNAL_H_

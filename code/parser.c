@@ -26,6 +26,18 @@ const char *ast_statement_kind_to_str(Statement_Kind k)
     return res;
 }
 
+const char *ast_expression_kind_to_str(Expression_Kind k)
+{
+    const char *res;
+    switch (k)
+    {
+        #define X(NAME) case AST_##NAME: { res = #NAME; } break;
+        AST_EXPRESSION_KIND_LIST
+        #undef X
+    }
+    return res;
+}
+
 void parser_next_token(Parser *p)
 {
     p->cur_token = p->peek_token;
@@ -142,7 +154,7 @@ Statement parse_statement(Parser *p)
 
         default:
         { 
-            stmt = make_illegal(p); 
+            stmt = parse_expression_statement(p);
         } break;
     }
     return stmt;
@@ -202,4 +214,59 @@ Statement parse_return_statement(Parser *p)
     }
 
     return stmt;
+}
+
+Statement parse_expression_statement(Parser *p)
+{
+    Statement stmt = {
+        .kind = AST_EXPRESSION_STATEMENT,
+        .stmt.expression_statement = (Expression_Statement) {
+            .expression = parse_expression(p, LOWEST)
+        }
+    };
+
+    if (peek_token_is(p, TK_SEMICOLON))
+    {
+        parser_next_token(p);
+    }
+    
+    return stmt;
+}
+
+Expression parse_expression(Parser *p, Operator_Precidence precidence)
+{
+    Expression expr;
+
+    switch (p->cur_token.kind)
+    {
+        case TK_IDENT:
+        {
+            expr.kind = AST_IDENT_EXPRESSION;
+            expr.expr.ident_expression = parse_ident(p);
+        } break;
+    
+        default:
+        {
+            if (precidence == LOWEST) precidence = 0;
+            assert(0 && "unhandled case");
+        } break;
+    }
+
+    return expr;
+}
+
+// TODO(HS): better mem allocs
+// TODO(HS): free ident
+Ident_Expression parse_ident(Parser *p)
+{
+    size_t slen = p->cur_token.literal.length;
+    char *buffer = malloc(sizeof(char) * (slen + 1));
+    strncpy(buffer, p->cur_token.literal.str, slen);
+    buffer[p->cur_token.literal.length] = '\0';
+
+    Ident_Expression expr = {
+        .ident = buffer
+    };
+
+    return expr;
 }
