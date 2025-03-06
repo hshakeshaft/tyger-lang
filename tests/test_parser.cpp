@@ -175,3 +175,46 @@ TEST(ParserTestSuite, Parse_Int_Expression)
         EXPECT_EQ(tc.expected_value, iexpr.value);
     }
 }
+
+// TODO(HS): how to test `-0.14` parses?
+TEST(ParserTestSuite, Parse_Float_Expression)
+{
+    struct Test_Case
+    {
+        const char *input;
+        float expected_value;
+    };
+
+    std::vector<Test_Case> test_cases{
+        { "10.1;", 10.1f },
+        { "3.14159;", 3.14159f },
+    };
+
+    for (auto &tc : test_cases)
+    {
+        Lexer l;
+        Parser p;
+
+        lexer_init(&l, tc.input);
+        parser_init(&p, &l);
+
+        Program program = parser_parse_program(&p);
+
+        EXPECT_EQ(program.len, 1);
+
+        Statement stmt = program.statements[0];
+
+        EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
+            << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+            << ", got " << ast_statement_kind_to_str(stmt.kind);
+
+        Expression expr = stmt.stmt.expression_statement.expression;
+
+        EXPECT_EQ(expr.kind, AST_FLOAT_EXPRESSION)
+            << "Expected kind " << ast_expression_kind_to_str(AST_FLOAT_EXPRESSION)
+            << ", got " << ast_expression_kind_to_str(expr.kind);
+
+        Float_Expression fexpr = expr.expr.float_expression;
+        EXPECT_FLOAT_EQ(tc.expected_value, fexpr.value);
+    }
+}

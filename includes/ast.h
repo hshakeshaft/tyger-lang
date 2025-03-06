@@ -12,7 +12,8 @@
 
 #define AST_EXPRESSION_KIND_LIST \
     X(IDENT_EXPRESSION)          \
-    X(INT_EXPRESSION)
+    X(INT_EXPRESSION)            \
+    X(FLOAT_EXPRESSION)
 
 typedef enum
 {
@@ -38,10 +39,16 @@ typedef struct
     int32_t value;
 } Int_Expression;
 
+typedef struct
+{
+    float value;
+} Float_Expression;
+
 typedef union
 {
     Ident_Expression ident_expression;
     Int_Expression int_expression;
+    Float_Expression float_expression;
 } uExpression;
 
 typedef struct

@@ -250,7 +250,13 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
             expr.kind = AST_INT_EXPRESSION;
             expr.expr.int_expression = parse_int(p);
         } break;
-    
+
+        case TK_FLOAT_LIT:
+        {
+            expr.kind = AST_FLOAT_EXPRESSION;
+            expr.expr.float_expression = parse_float(p);
+        } break;
+
         default:
         {
             if (precidence == LOWEST) precidence = 0;
@@ -293,4 +299,22 @@ Int_Expression parse_int(Parser *p)
         .value = val
     };
     return iexpr;
+}
+
+Float_Expression parse_float(Parser *p)
+{
+    // TODO(HS): handle integers which are too long string wise
+    size_t slen = p->cur_token.literal.length;
+    char *buffer = malloc(sizeof(char) * (slen + 1));
+    assert(buffer && "Failed to allocate scratch buffer");
+    strncpy(buffer, p->cur_token.literal.str, slen);
+    buffer[slen] = '\0';
+
+    float val = (float) atof(buffer);
+    free(buffer);
+
+    Float_Expression fexpr = {
+        .value = val
+    };
+    return fexpr;
 }
