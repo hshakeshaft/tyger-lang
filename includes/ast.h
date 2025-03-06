@@ -1,5 +1,7 @@
 #ifndef TYGER_AST_H_
 #define TYGER_AST_H_
+#include <stdint.h>
+
 #include "lexer.h"
 
 #define AST_STATEMENT_KIND_LIST \
@@ -9,7 +11,8 @@
     X(EXPRESSION_STATEMENT)
 
 #define AST_EXPRESSION_KIND_LIST \
-    X(IDENT_EXPRESSION)
+    X(IDENT_EXPRESSION)          \
+    X(INT_EXPRESSION)
 
 typedef enum
 {
@@ -30,9 +33,15 @@ typedef struct
     const char *ident;
 } Ident_Expression;
 
+typedef struct
+{
+    int32_t value;
+} Int_Expression;
+
 typedef union
 {
     Ident_Expression ident_expression;
+    Int_Expression int_expression;
 } uExpression;
 
 typedef struct

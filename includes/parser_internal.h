@@ -29,5 +29,6 @@ Statement parse_expression_statement(Parser *p);
 Expression parse_expression(Parser *p, Operator_Precidence precidence);
 
 Ident_Expression parse_ident(Parser *p);
+Int_Expression parse_int(Parser *p);
 
 #endif // TYGER_PARSER_INTERNAL_H_

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
+#include <stdint.h>
 
 #include "lexer.h"
 #include "parser.h"
@@ -129,5 +130,48 @@ TEST(ParserTestSuite, Parse_Ident_Expression)
         EXPECT_TRUE(strncmp(iexpr.ident, tc.ident, tc.expected_ident_len) == 0)
             << "Expected ident `" << tc.ident 
             << "`, got `" << iexpr.ident << "`";
+    }
+}
+
+// TODO(HS): how to test `-10` parses?
+TEST(ParserTestSuite, Parse_Int_Expression)
+{
+    struct Test_Case
+    {
+        const char *input;
+        int32_t expected_value;
+    };
+
+    std::vector<Test_Case> test_cases{
+        { "10;", 10 },
+        { "0;", 0 },
+    };
+
+    for (auto &tc : test_cases)
+    {
+        Lexer l;
+        Parser p;
+
+        lexer_init(&l, tc.input);
+        parser_init(&p, &l);
+
+        Program program = parser_parse_program(&p);
+
+        EXPECT_EQ(program.len, 1);
+
+        Statement stmt = program.statements[0];
+
+        EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
+            << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+            << ", got " << ast_statement_kind_to_str(stmt.kind);
+
+        Expression expr = stmt.stmt.expression_statement.expression;
+
+        EXPECT_EQ(expr.kind, AST_INT_EXPRESSION)
+            << "Expected kind " << ast_expression_kind_to_str(AST_INT_EXPRESSION)
+            << ", got " << ast_expression_kind_to_str(expr.kind);
+
+        Int_Expression iexpr = expr.expr.int_expression;
+        EXPECT_EQ(tc.expected_value, iexpr.value);
     }
 }

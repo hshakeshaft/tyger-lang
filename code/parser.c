@@ -244,6 +244,12 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
             expr.kind = AST_IDENT_EXPRESSION;
             expr.expr.ident_expression = parse_ident(p);
         } break;
+
+        case TK_INT_LIT:
+        {
+            expr.kind = AST_INT_EXPRESSION;
+            expr.expr.int_expression = parse_int(p);
+        } break;
     
         default:
         {
@@ -269,4 +275,22 @@ Ident_Expression parse_ident(Parser *p)
     };
 
     return expr;
+}
+
+Int_Expression parse_int(Parser *p)
+{
+    // TODO(HS): handle integers which are too long string wise
+    size_t slen = p->cur_token.literal.length;
+    char *buffer = malloc(sizeof(char) * (slen + 1));
+    assert(buffer && "Failed to allocate scratch buffer");
+    strncpy(buffer, p->cur_token.literal.str, slen);
+    buffer[slen] = '\0';
+
+    int val = atoi(buffer);
+    free(buffer);
+
+    Int_Expression iexpr = {
+        .value = val
+    };
+    return iexpr;
 }
