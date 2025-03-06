@@ -292,6 +292,7 @@ Int_Expression parse_int(Parser *p)
     strncpy(buffer, p->cur_token.literal.str, slen);
     buffer[slen] = '\0';
 
+    // TODO(HS): handle `0` case vs return of 0
     int val = atoi(buffer);
     free(buffer);
 
@@ -310,6 +311,7 @@ Float_Expression parse_float(Parser *p)
     strncpy(buffer, p->cur_token.literal.str, slen);
     buffer[slen] = '\0';
 
+    // TODO(HS): handle `0.0` case vs return of `0.0`
     float val = (float) atof(buffer);
     free(buffer);
 
