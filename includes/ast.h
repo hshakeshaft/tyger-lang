@@ -23,6 +23,9 @@ typedef enum
     #undef X
 } Statement_Kind;
 
+// NOTE(HS): need to forward declare to allow nesting of expressions
+typedef struct expression_s Expression;
+
 typedef enum
 {
     #define X(NAME) AST_##NAME,
@@ -45,17 +48,10 @@ typedef struct
     float value;
 } Float_Expression;
 
-// TODO(HS): make RHS expression of any kind
-// TODO(HS): rework expression structuring
 typedef struct
 {
     char op;
-    Expression_Kind rhs_kind;
-    union
-    {
-        Int_Expression int_expression;
-        Float_Expression float_expression;
-    } rhs;
+    Expression *rhs;
 } Prefix_Expression;
 
 typedef union
@@ -66,12 +62,11 @@ typedef union
     Prefix_Expression prefix_expression;
 } uExpression;
 
-typedef struct
+struct expression_s
 {
     Expression_Kind kind;
     uExpression expr;
-    uExpression *next_expr;
-} Expression;
+};
 
 
 typedef struct

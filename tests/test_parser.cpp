@@ -133,7 +133,6 @@ TEST(ParserTestSuite, Parse_Ident_Expression)
     }
 }
 
-// TODO(HS): how to test `-10` parses?
 TEST(ParserTestSuite, Parse_Int_Expression)
 {
     struct Test_Case
@@ -176,7 +175,6 @@ TEST(ParserTestSuite, Parse_Int_Expression)
     }
 }
 
-// TODO(HS): how to test `-0.14` parses?
 TEST(ParserTestSuite, Parse_Float_Expression)
 {
     struct Test_Case
@@ -233,15 +231,16 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
     {
         const char *input;
         char op;
-        Number expected;
+        Expression_Kind expected_kind;
+        Number expected_value;
     };
 
     Number res1{ 10 };
     Number res2; res2.fval = 3.1f;
 
     std::vector<Test_Case> test_cases{
-        { "-10;", '-', res1 },
-        { "-3.1;", '-', res2 },
+        { "-10;",  '-', AST_INT_EXPRESSION,   res1 },
+        { "-3.1;", '-', AST_FLOAT_EXPRESSION, res2 },
     };
 
     for (auto &tc : test_cases)
@@ -272,18 +271,20 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
         
         EXPECT_EQ(tc.op, pexpr.op);
 
-        EXPECT_TRUE(pexpr.rhs_kind == AST_INT_EXPRESSION || pexpr.rhs_kind == AST_FLOAT_EXPRESSION)
-            << "Expected prefix expression operand to be either " << ast_expression_kind_to_str(AST_INT_EXPRESSION)
-            << "or " << ast_expression_kind_to_str(AST_FLOAT_EXPRESSION)
-            << ", got " << ast_expression_kind_to_str(pexpr.rhs_kind);
+        EXPECT_TRUE(pexpr.rhs->kind == tc.expected_kind)
+            << "Expected prefix expression operand to be either " 
+            << ast_expression_kind_to_str(tc.expected_kind)
+            << ", got " << ast_expression_kind_to_str(pexpr.rhs->kind);
 
-        if (pexpr.rhs_kind == AST_INT_EXPRESSION)
+        if (pexpr.rhs->kind == AST_INT_EXPRESSION)
         {
-            EXPECT_EQ(pexpr.rhs.int_expression.value, tc.expected.ival);
+            EXPECT_EQ(pexpr.rhs->expr.int_expression.value, tc.expected_value.ival);
         }
-        else if (pexpr.rhs_kind == AST_FLOAT_EXPRESSION)
+        else if (pexpr.rhs->kind == AST_FLOAT_EXPRESSION)
         {
-            EXPECT_FLOAT_EQ(pexpr.rhs.float_expression.value, tc.expected.fval);
+            EXPECT_FLOAT_EQ(pexpr.rhs->expr.float_expression.value, tc.expected_value.fval);
         }
+
+        program_free(&program);
     }
 }

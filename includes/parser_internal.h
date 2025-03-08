@@ -8,6 +8,7 @@
 typedef enum
 {
     LOWEST = 0,
+    PREFIX = 50,
 } Operator_Precidence;
 
 bool cur_token_is(Parser *p, Token_Kind kind);

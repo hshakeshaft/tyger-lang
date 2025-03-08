@@ -25,6 +25,8 @@ extern "C" {
 void parser_init(Parser *p, Lexer *l);
 
 Program parser_parse_program(Parser *p);
+void program_free(Program *prog);
+void expression_free(Expression *expr);
 
 #if defined(__cplusplus)
 }

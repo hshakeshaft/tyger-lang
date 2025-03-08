@@ -109,6 +109,57 @@ void program_add_statement(Program *prog, const Statement *stmt)
     prog->len += 1;
 }
 
+void program_free(Program *prog)
+{
+    if (!prog)             { return; }
+    if (!prog->statements) { return; }
+
+    for (size_t i = 0; i < prog->len; ++i)
+    {
+        Statement *stmt = &prog->statements[i];
+        switch (stmt->kind)
+        {
+            // TODO(HS): free expressions
+            case AST_VAR_STATEMENT:
+            case AST_RETURN_STATEMENT:
+            {} break;
+
+            case AST_EXPRESSION_STATEMENT:
+            {
+                expression_free(&stmt->stmt.expression_statement.expression);
+            } break;
+
+            case AST_ILLGEAL_STATEMENT:
+            {
+                assert(0 && "Invalid statement kind");
+            } break;
+        }
+    }
+
+    free(prog->statements);
+    prog->statements = NULL;
+    prog->len = 0;
+    prog->capacity = 0;
+}
+
+// TODO(HS): stress test this & make sure it doesn't actually leak
+void expression_free(Expression *expr)
+{
+    if (!expr) { return; }
+
+    switch (expr->kind)
+    {
+        case AST_PREFIX_EXPRESSION:
+        {
+            expression_free(expr->expr.prefix_expression.rhs);
+            free(expr->expr.prefix_expression.rhs);
+        } break;
+
+        default:
+        {} break;
+    }
+}
+
 // TODO(HS): improve this for errors
 Statement make_illegal(Parser *p)
 {
@@ -327,6 +378,7 @@ Float_Expression parse_float(Parser *p)
     return fexpr;
 }
 
+// TODO(HS): better allocation strategy for expressions
 // TODO(HS): parse prefix op for idents (& call expr?)
 Prefix_Expression parse_prefix_expression(Parser *p)
 {
@@ -346,23 +398,12 @@ Prefix_Expression parse_prefix_expression(Parser *p)
         } break;
     }
 
-    if (peek_token_is(p, TK_INT_LIT))
-    {
-        parser_next_token(p);
-        expr.rhs_kind = AST_INT_EXPRESSION;
-        expr.rhs.int_expression = parse_int(p);
-    }
-    else if (peek_token_is(p, TK_FLOAT_LIT))
-    {
-        parser_next_token(p);
-        expr.rhs_kind = AST_FLOAT_EXPRESSION;
-        expr.rhs.float_expression = parse_float(p);
-    }
-    else
-    {
-        assert(0 && "Invalid type for prefix operation");
-    }
     parser_next_token(p);
+    Expression rhs = parse_expression(p, PREFIX);
+
+    expr.rhs = malloc(sizeof(Expression));
+    assert(expr.rhs && "Failed to allocate memory for expression");
+    memcpy(expr.rhs, &rhs, sizeof(Expression));
 
     return expr;
 }
