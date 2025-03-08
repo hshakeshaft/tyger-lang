@@ -235,12 +235,9 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
         Number expected_value;
     };
 
-    Number res1{ 10 };
-    Number res2; res2.fval = 3.1f;
-
     std::vector<Test_Case> test_cases{
-        { "-10;",  '-', AST_INT_EXPRESSION,   res1 },
-        { "-3.1;", '-', AST_FLOAT_EXPRESSION, res2 },
+        { "-10;",  '-', AST_INT_EXPRESSION,   { .ival = 10 }   },
+        { "-3.1;", '-', AST_FLOAT_EXPRESSION, { .fval = 3.1f } },
     };
 
     for (auto &tc : test_cases)
