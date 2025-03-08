@@ -13,7 +13,8 @@
 #define AST_EXPRESSION_KIND_LIST \
     X(IDENT_EXPRESSION)          \
     X(INT_EXPRESSION)            \
-    X(FLOAT_EXPRESSION)
+    X(FLOAT_EXPRESSION)          \
+    X(PREFIX_EXPRESSION)
 
 typedef enum
 {
@@ -44,11 +45,25 @@ typedef struct
     float value;
 } Float_Expression;
 
+// TODO(HS): make RHS expression of any kind
+// TODO(HS): rework expression structuring
+typedef struct
+{
+    char op;
+    Expression_Kind rhs_kind;
+    union
+    {
+        Int_Expression int_expression;
+        Float_Expression float_expression;
+    } rhs;
+} Prefix_Expression;
+
 typedef union
 {
     Ident_Expression ident_expression;
     Int_Expression int_expression;
     Float_Expression float_expression;
+    Prefix_Expression prefix_expression;
 } uExpression;
 
 typedef struct

@@ -218,3 +218,72 @@ TEST(ParserTestSuite, Parse_Float_Expression)
         EXPECT_FLOAT_EQ(tc.expected_value, fexpr.value);
     }
 }
+
+// TODO(HS): decide if I want to allow `!<number>` in parser
+// TODO(HS): ^above for strings too
+TEST(ParserTestSuite, Parse_Prefix_Expression)
+{
+    union Number
+    {
+        int32_t ival;
+        float fval;
+    };
+
+    struct Test_Case
+    {
+        const char *input;
+        char op;
+        Number expected;
+    };
+
+    Number res1{ 10 };
+    Number res2; res2.fval = 3.1f;
+
+    std::vector<Test_Case> test_cases{
+        { "-10;", '-', res1 },
+        { "-3.1;", '-', res2 },
+    };
+
+    for (auto &tc : test_cases)
+    {
+        Lexer l;
+        Parser p;
+
+        lexer_init(&l, tc.input);
+        parser_init(&p, &l);
+
+        Program program = parser_parse_program(&p);
+
+        EXPECT_EQ(program.len, 1);
+
+        Statement stmt = program.statements[0];
+
+        EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
+            << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+            << ", got " << ast_statement_kind_to_str(stmt.kind);
+
+        Expression expr = stmt.stmt.expression_statement.expression;
+
+        EXPECT_EQ(expr.kind, AST_PREFIX_EXPRESSION)
+            << "Expected kind " << ast_expression_kind_to_str(AST_PREFIX_EXPRESSION)
+            << ", got " << ast_expression_kind_to_str(expr.kind);
+
+        Prefix_Expression pexpr = expr.expr.prefix_expression;
+        
+        EXPECT_EQ(tc.op, pexpr.op);
+
+        EXPECT_TRUE(pexpr.rhs_kind == AST_INT_EXPRESSION || pexpr.rhs_kind == AST_FLOAT_EXPRESSION)
+            << "Expected prefix expression operand to be either " << ast_expression_kind_to_str(AST_INT_EXPRESSION)
+            << "or " << ast_expression_kind_to_str(AST_FLOAT_EXPRESSION)
+            << ", got " << ast_expression_kind_to_str(pexpr.rhs_kind);
+
+        if (pexpr.rhs_kind == AST_INT_EXPRESSION)
+        {
+            EXPECT_EQ(pexpr.rhs.int_expression.value, tc.expected.ival);
+        }
+        else if (pexpr.rhs_kind == AST_FLOAT_EXPRESSION)
+        {
+            EXPECT_FLOAT_EQ(pexpr.rhs.float_expression.value, tc.expected.fval);
+        }
+    }
+}

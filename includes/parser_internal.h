@@ -31,5 +31,6 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence);
 Ident_Expression parse_ident(Parser *p);
 Int_Expression parse_int(Parser *p);
 Float_Expression parse_float(Parser *p);
+Prefix_Expression parse_prefix_expression(Parser *p);
 
 #endif // TYGER_PARSER_INTERNAL_H_

@@ -256,6 +256,12 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
             expr.kind = AST_FLOAT_EXPRESSION;
             expr.expr.float_expression = parse_float(p);
         } break;
+        
+        case TK_MINUS:
+        {
+            expr.kind = AST_PREFIX_EXPRESSION;
+            expr.expr.prefix_expression = parse_prefix_expression(p);
+        } break;
 
         default:
         {
@@ -319,4 +325,44 @@ Float_Expression parse_float(Parser *p)
         .value = val
     };
     return fexpr;
+}
+
+// TODO(HS): parse prefix op for idents (& call expr?)
+Prefix_Expression parse_prefix_expression(Parser *p)
+{
+    Token op = p->cur_token;
+    Prefix_Expression expr = {0};
+
+    switch (op.kind)
+    {
+        case TK_MINUS:
+        {
+            expr.op = '-';
+        } break;
+
+        default:
+        {
+            assert(0 && "Invalid prefix operator");
+        } break;
+    }
+
+    if (peek_token_is(p, TK_INT_LIT))
+    {
+        parser_next_token(p);
+        expr.rhs_kind = AST_INT_EXPRESSION;
+        expr.rhs.int_expression = parse_int(p);
+    }
+    else if (peek_token_is(p, TK_FLOAT_LIT))
+    {
+        parser_next_token(p);
+        expr.rhs_kind = AST_FLOAT_EXPRESSION;
+        expr.rhs.float_expression = parse_float(p);
+    }
+    else
+    {
+        assert(0 && "Invalid type for prefix operation");
+    }
+    parser_next_token(p);
+
+    return expr;
 }
