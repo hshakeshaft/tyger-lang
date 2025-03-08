@@ -14,7 +14,8 @@
     X(IDENT_EXPRESSION)          \
     X(INT_EXPRESSION)            \
     X(FLOAT_EXPRESSION)          \
-    X(PREFIX_EXPRESSION)
+    X(PREFIX_EXPRESSION)         \
+    X(INFIX_EXPRESSION)
 
 typedef enum
 {
@@ -54,12 +55,20 @@ typedef struct
     Expression *rhs;
 } Prefix_Expression;
 
+typedef struct
+{
+    char op[2];
+    Expression *lhs;
+    Expression *rhs;
+} Infix_Expression;
+
 typedef union
 {
     Ident_Expression ident_expression;
     Int_Expression int_expression;
     Float_Expression float_expression;
     Prefix_Expression prefix_expression;
+    Infix_Expression infix_expression;
 } uExpression;
 
 struct expression_s

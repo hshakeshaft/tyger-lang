@@ -7,9 +7,20 @@
 
 typedef enum
 {
-    LOWEST = 0,
-    PREFIX = 50,
+    LOWEST      = 0,
+    EQUALS      = 10, // ==
+    LESSGREATER = 20, // > or <
+    SUM         = 30, // +
+    PRODUCT     = 40, // *
+    PREFIX      = 50, // -X or !X
+    CALL        = 60, // myFunction(X)
 } Operator_Precidence;
+
+/// Returns the precidence of an operator passed.
+Operator_Precidence precidence_of(Token_Kind k);
+
+Operator_Precidence cur_precidence(const Parser *p);
+Operator_Precidence peek_precidence(const Parser *p);
 
 bool cur_token_is(Parser *p, Token_Kind kind);
 bool peek_token_is(Parser *p, Token_Kind kind);
@@ -33,5 +44,6 @@ Ident_Expression parse_ident(Parser *p);
 Int_Expression parse_int(Parser *p);
 Float_Expression parse_float(Parser *p);
 Prefix_Expression parse_prefix_expression(Parser *p);
+void parse_infix_expression(Parser *p, Infix_Expression *ie);
 
 #endif // TYGER_PARSER_INTERNAL_H_

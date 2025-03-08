@@ -285,3 +285,66 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
         program_free(&program);
     }
 }
+
+// TODO(HS): write function to compare expressions - should compare type and value
+TEST(ParserTestSuite, Parse_Binary_Expression)
+{
+    struct Test_Case
+    {
+        const char *input;
+        char expected_op[2];
+        Expression lhs;
+        Expression rhs;
+    };
+
+    std::vector<Test_Case> test_cases{
+        { "5 + 5;",  { '+' }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } } },
+        // { "5 - 5;",  { '-' }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } } },
+        // { "5 * 5;",  { '*' }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } } },
+        // { "5 / 5;",  { '/' }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } }, Expression{ AST_INT_EXPRESSION, { .int_expression = {5} } } },
+    };
+
+    for (auto& tc : test_cases)
+    {
+        Lexer l;
+        Parser p;
+        
+        lexer_init(&l, tc.input);
+        parser_init(&p, &l);
+
+        Program program = parser_parse_program(&p);
+        EXPECT_EQ(program.len, 1);
+
+        Statement stmt = program.statements[0];
+        EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
+            << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+            << ", got " << ast_statement_kind_to_str(stmt.kind);
+
+        Expression expr = stmt.stmt.expression_statement.expression;
+        EXPECT_EQ(expr.kind, AST_INFIX_EXPRESSION)
+            << "Expected kind " << ast_expression_kind_to_str(AST_INFIX_EXPRESSION)
+            << ", got " << ast_expression_kind_to_str(expr.kind);
+        
+        Infix_Expression inexpr = expr.expr.infix_expression;
+
+        // test operator
+        std::string act_op{inexpr.op};
+        std::string exp_op{tc.expected_op};
+        EXPECT_EQ(act_op.length(), exp_op.length());
+        EXPECT_EQ(act_op, exp_op);
+
+        // test LHS
+        Expression *lhs = inexpr.lhs;
+        EXPECT_EQ(lhs->kind, tc.lhs.kind)
+            << "Expected kind " << ast_expression_kind_to_str(tc.lhs.kind)
+            << ", got " << ast_expression_kind_to_str(lhs->kind);
+
+        // test RHS
+        Expression *rhs = inexpr.rhs;
+        EXPECT_EQ(rhs->kind, tc.rhs.kind)
+            << "Expected kind " << ast_expression_kind_to_str(tc.rhs.kind)
+            << ", got " << ast_expression_kind_to_str(rhs->kind);
+
+        program_free(&program);
+    }
+}

@@ -1,10 +1,43 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "ast.h"
 #include "parser.h"
 #include "parser_internal.h"
+
+inline Operator_Precidence precidence_of(Token_Kind k)
+{
+    Operator_Precidence p;
+    switch (k)
+    {
+        case TK_PLUS:     { p = SUM; } break;
+        case TK_MINUS:    { p = SUM; } break;
+        case TK_ASTERISK: { p = PRODUCT; } break;
+        case TK_SLASH:    { p = PRODUCT; } break;
+        case TK_LT:       { p = LESSGREATER; } break;
+        case TK_GT:       { p = LESSGREATER; } break;
+        case TK_EQ:       { p = EQUALS; } break;
+        case TK_NEQ:      { p = EQUALS; } break;
+
+        default:
+        {
+            p = LOWEST;
+        } break;
+    }
+    return p;
+}
+
+inline Operator_Precidence cur_precidence(const Parser *p)
+{
+    return precidence_of(p->cur_token.kind);
+}
+
+inline Operator_Precidence peek_precidence(const Parser *p)
+{
+    return precidence_of(p->peek_token.kind);
+}
 
 void parser_init(Parser *p, Lexer *l)
 {
@@ -155,6 +188,14 @@ void expression_free(Expression *expr)
             free(expr->expr.prefix_expression.rhs);
         } break;
 
+        case AST_INFIX_EXPRESSION:
+        {
+            expression_free(expr->expr.infix_expression.lhs);
+            free(expr->expr.infix_expression.lhs);
+            expression_free(expr->expr.infix_expression.rhs);
+            free(expr->expr.infix_expression.rhs);
+        } break;
+
         default:
         {} break;
     }
@@ -287,6 +328,8 @@ Statement parse_expression_statement(Parser *p)
 Expression parse_expression(Parser *p, Operator_Precidence precidence)
 {
     Expression expr;
+    Expression inexpr;
+    bool should_parse_infix = false;
 
     switch (p->cur_token.kind)
     {
@@ -321,7 +364,28 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         } break;
     }
 
-    return expr;
+    if (
+        expect_peek(p, TK_PLUS) || expect_peek(p, TK_MINUS) 
+        || expect_peek(p, TK_ASTERISK) || expect_peek(p, TK_SLASH)
+    )
+    {
+        inexpr.kind = AST_INFIX_EXPRESSION;
+        inexpr.expr.infix_expression.lhs = malloc(sizeof(Expression));
+        assert(inexpr.expr.infix_expression.lhs);
+        memcpy(inexpr.expr.infix_expression.lhs, &expr, sizeof(Expression));
+
+        inexpr.expr.infix_expression.rhs = malloc(sizeof(Expression));
+        assert(inexpr.expr.infix_expression.rhs);
+        should_parse_infix = true;
+    }
+
+    while (!peek_token_is(p, TK_SEMICOLON) && (precidence < peek_precidence(p)))
+    {
+        parser_next_token(p);
+        parse_infix_expression(p, &inexpr.expr.infix_expression);
+    }
+
+    return should_parse_infix ? inexpr : expr;
 }
 
 // TODO(HS): better mem allocs
@@ -406,4 +470,26 @@ Prefix_Expression parse_prefix_expression(Parser *p)
     memcpy(expr.rhs, &rhs, sizeof(Expression));
 
     return expr;
+}
+
+void parse_infix_expression(Parser *p, Infix_Expression *ie)
+{
+    Operator_Precidence precidence = cur_precidence(p);
+
+    switch (p->cur_token.kind)
+    {
+        case TK_PLUS:     { ie->op[0] = '+'; } break;
+        case TK_MINUS:    { ie->op[0] = '-'; } break;
+        case TK_ASTERISK: { ie->op[0] = '*'; } break;
+        case TK_SLASH:    { ie->op[0] = '/'; } break;
+
+        default:
+        {
+            assert(0 && "Invalid operator encountered whilst parsing infix expression");
+        } break;
+    }
+
+    parser_next_token(p);
+    Expression rhs = parse_expression(p, precidence);
+    memcpy(ie->rhs, &rhs, sizeof(Expression));
 }
