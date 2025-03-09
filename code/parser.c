@@ -88,6 +88,22 @@ const char *ast_program_print(const Program *prog)
 
         switch (stmt->kind)
         {
+            case AST_VAR_STATEMENT:
+            {
+                bytes_to_write = snprintf(NULL, 0, "      ident: %s\n", stmt->stmt.var_statement.ident);
+                ast_resize_program_buffer(ast_buffer, &ast_buffer_len, offset, bytes_to_write);
+                snprintf(&ast_buffer[offset], bytes_to_write + 1, "      ident: %s\n", stmt->stmt.var_statement.ident);
+                offset += bytes_to_write;
+            } break;
+
+            case AST_RETURN_STATEMENT:
+            {
+                bytes_to_write = snprintf(NULL, 0, "      expr:\n");
+                ast_resize_program_buffer(ast_buffer, &ast_buffer_len, offset, bytes_to_write);
+                snprintf(&ast_buffer[offset], bytes_to_write + 1, "      expr:\n");
+                offset += bytes_to_write;
+            } break;
+
             case AST_EXPRESSION_STATEMENT:
             {
                 bytes_to_write = snprintf(NULL, 0, "      expr:\n");
@@ -117,7 +133,6 @@ const char *ast_program_print(const Program *prog)
     return ast_buffer;
 }
 
-// void ast_expression_print(char *buffer, const Expression *expr, int indent_level)
 void ast_expression_print(
     const Expression *expr,
     int indent_level,
@@ -134,24 +149,58 @@ void ast_expression_print(
     memset(padding, ' ', num_spaces);
 
     int bytes_to_write;
+    const char *expr_kind = ast_expression_kind_to_str(expr->kind);
+
+    bytes_to_write = snprintf(NULL, 0, "%skind: %s\n", padding, expr_kind);
+    ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+    snprintf(&buffer[*offset], bytes_to_write + 1, "%skind: %s\n", padding, expr_kind);
+    *offset += bytes_to_write;
 
     switch (expr->kind)
     {
         case AST_IDENT_EXPRESSION:
         {
-            // printf("%skind: %s\n", padding, ast_expression_kind_to_str(expr->kind));
-            // printf("%sident: %s\n", padding, expr->expr.ident_expression.ident);
-            const char *expr_kind = ast_expression_kind_to_str(expr->kind);
-
-            bytes_to_write = snprintf(NULL, 0, "%skind: %s\n", padding, expr_kind);
-            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
-            snprintf(&buffer[*offset], bytes_to_write + 1, "%skind: %s\n", padding, expr_kind);
-            *offset += bytes_to_write;
-
             bytes_to_write = snprintf(NULL, 0, "%sident: %s\n", padding, expr->expr.ident_expression.ident);
             ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
             snprintf(&buffer[*offset], bytes_to_write + 1, "%sident: %s\n", padding, expr->expr.ident_expression.ident);
             *offset += bytes_to_write;
+        } break;
+
+        case AST_INT_EXPRESSION:
+        {
+            bytes_to_write = snprintf(NULL, 0, "%svalue: %i\n", padding, expr->expr.int_expression.value);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%svalue: %i\n", padding, expr->expr.int_expression.value);
+            *offset += bytes_to_write;
+        } break;
+
+        case AST_FLOAT_EXPRESSION:
+        {
+            bytes_to_write = snprintf(NULL, 0, "%svalue: %f\n", padding, expr->expr.float_expression.value);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%svalue: %f\n", padding, expr->expr.float_expression.value);
+            *offset += bytes_to_write;
+        } break;
+
+        case AST_PREFIX_EXPRESSION:
+        {
+            bytes_to_write = snprintf(NULL, 0, "%sop: '%c'\n", padding, expr->expr.prefix_expression.op);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%sop: '%c'\n", padding, expr->expr.prefix_expression.op);
+            *offset += bytes_to_write;
+
+            bytes_to_write = snprintf(NULL, 0, "%sexpr:\n", padding);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%sexpr:\n", padding);
+            *offset += bytes_to_write;
+
+            ast_expression_print(
+                expr->expr.prefix_expression.rhs,
+                indent_level + 1,
+                buffer,
+                buffer_len,
+                offset
+            );
         } break;
 
         default:

@@ -35,20 +35,23 @@ TEST(ParserTestSuite, Parse_Var_Statement)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
+        const char *prog_str = ast_program_print(&program);
 
-        EXPECT_EQ(program.len, 1);
+        EXPECT_EQ(program.len, 1) << prog_str;
 
         Statement stmt = program.statements[0];
 
         EXPECT_EQ(stmt.kind, AST_VAR_STATEMENT)
             << "Expected kind " << ast_statement_kind_to_str(AST_VAR_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind);
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
         
         std::string expected_ident{tc.expected_ident};
         std::string actual_ident{stmt.stmt.var_statement.ident};
-        EXPECT_EQ(expected_ident, actual_ident);
+        EXPECT_EQ(expected_ident, actual_ident) << prog_str;
 
-        ast_free_node(&stmt);
+        program_free(&program);
+        free((void *) prog_str);
     }
 }
 
@@ -75,16 +78,19 @@ TEST(ParserTestSuite, Parse_Return_Statements)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
+        const char *prog_str = ast_program_print(&program);
 
-        EXPECT_EQ(program.len, 1);
+        EXPECT_EQ(program.len, 1) << prog_str;
 
         Statement stmt = program.statements[0];
 
         EXPECT_EQ(stmt.kind, AST_RETURN_STATEMENT)
             << "Expected kind " << ast_statement_kind_to_str(AST_RETURN_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind);
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
         
-        ast_free_node(&stmt);
+        program_free(&program);
+        free((void *) prog_str);
     }
 }
 
@@ -163,23 +169,29 @@ TEST(ParserTestSuite, Parse_Int_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
+        const char *prog_str = ast_program_print(&program);
 
-        EXPECT_EQ(program.len, 1);
+        EXPECT_EQ(program.len, 1) << prog_str;
 
         Statement stmt = program.statements[0];
 
         EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
             << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind);
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
 
         Expression expr = stmt.stmt.expression_statement.expression;
 
         EXPECT_EQ(expr.kind, AST_INT_EXPRESSION)
             << "Expected kind " << ast_expression_kind_to_str(AST_INT_EXPRESSION)
-            << ", got " << ast_expression_kind_to_str(expr.kind);
+            << ", got " << ast_expression_kind_to_str(expr.kind)
+            << "\n" << prog_str;
 
         Int_Expression iexpr = expr.expr.int_expression;
-        EXPECT_EQ(tc.expected_value, iexpr.value);
+        EXPECT_EQ(tc.expected_value, iexpr.value) << prog_str;
+
+        program_free(&program);
+        free((void *) prog_str);
     }
 }
 
@@ -205,23 +217,29 @@ TEST(ParserTestSuite, Parse_Float_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
+        const char *prog_str = ast_program_print(&program);
 
-        EXPECT_EQ(program.len, 1);
+        EXPECT_EQ(program.len, 1) << prog_str;
 
         Statement stmt = program.statements[0];
 
         EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
             << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind);
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
 
         Expression expr = stmt.stmt.expression_statement.expression;
 
         EXPECT_EQ(expr.kind, AST_FLOAT_EXPRESSION)
             << "Expected kind " << ast_expression_kind_to_str(AST_FLOAT_EXPRESSION)
-            << ", got " << ast_expression_kind_to_str(expr.kind);
+            << ", got " << ast_expression_kind_to_str(expr.kind)
+            << "\n" << prog_str;
 
         Float_Expression fexpr = expr.expr.float_expression;
-        EXPECT_FLOAT_EQ(tc.expected_value, fexpr.value);
+        EXPECT_FLOAT_EQ(tc.expected_value, fexpr.value) << prog_str;
+
+        program_free(&program);
+        free((void *) prog_str);
     }
 }
 
@@ -257,6 +275,7 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
+        const char *prog_str = ast_program_print(&program);
 
         EXPECT_EQ(program.len, 1);
 
@@ -264,33 +283,37 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
 
         EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
             << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind);
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
 
         Expression expr = stmt.stmt.expression_statement.expression;
 
         EXPECT_EQ(expr.kind, AST_PREFIX_EXPRESSION)
             << "Expected kind " << ast_expression_kind_to_str(AST_PREFIX_EXPRESSION)
-            << ", got " << ast_expression_kind_to_str(expr.kind);
+            << ", got " << ast_expression_kind_to_str(expr.kind)
+            << "\n" << prog_str;
 
         Prefix_Expression pexpr = expr.expr.prefix_expression;
         
-        EXPECT_EQ(tc.op, pexpr.op);
+        EXPECT_EQ(tc.op, pexpr.op) << prog_str;
 
-        EXPECT_TRUE(pexpr.rhs->kind == tc.expected_kind)
+        EXPECT_EQ(pexpr.rhs->kind, tc.expected_kind)
             << "Expected prefix expression operand to be either " 
             << ast_expression_kind_to_str(tc.expected_kind)
-            << ", got " << ast_expression_kind_to_str(pexpr.rhs->kind);
+            << ", got " << ast_expression_kind_to_str(pexpr.rhs->kind)
+            << "\n" << prog_str;
 
         if (pexpr.rhs->kind == AST_INT_EXPRESSION)
         {
-            EXPECT_EQ(pexpr.rhs->expr.int_expression.value, tc.expected_value.ival);
+            EXPECT_EQ(pexpr.rhs->expr.int_expression.value, tc.expected_value.ival) << prog_str;
         }
         else if (pexpr.rhs->kind == AST_FLOAT_EXPRESSION)
         {
-            EXPECT_FLOAT_EQ(pexpr.rhs->expr.float_expression.value, tc.expected_value.fval);
+            EXPECT_FLOAT_EQ(pexpr.rhs->expr.float_expression.value, tc.expected_value.fval) << prog_str;
         }
 
         program_free(&program);
+        free((void *) prog_str);
     }
 }
 
