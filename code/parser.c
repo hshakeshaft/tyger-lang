@@ -40,6 +40,29 @@ inline Operator_Precidence peek_precidence(const Parser *p)
     return precidence_of(p->peek_token.kind);
 }
 
+const char *op_to_string(Token_Kind op)
+{
+    const char *res;
+    switch (op)
+    {
+        case TK_PLUS:     { res = "+"; } break;
+        case TK_MINUS:    { res = "-"; } break;
+        case TK_ASTERISK: { res = "*"; } break;
+        case TK_SLASH:    { res = "/"; } break;
+        case TK_LT:       { res = "<"; } break;
+        case TK_GT:       { res = ">"; } break;
+        case TK_EQ:       { res = "=="; } break;
+        case TK_NEQ:      { res = "!="; } break;
+
+        default:
+        {
+            // fprintf(stderr, "Invalid operator to perform stirng conversion on - %s\n", token_kind_to_string(op));
+            res = "INVALID";
+        } break;
+    }
+    return res;
+}
+
 static void ast_resize_program_buffer(
     INOUT char *buffer,
     INOUT size_t *length,
@@ -203,9 +226,49 @@ void ast_expression_print(
             );
         } break;
 
+        case AST_INFIX_EXPRESSION:
+        {
+            { // write op
+                const char *op = op_to_string(expr->expr.infix_expression.op);
+
+                bytes_to_write = snprintf(NULL, 0, "%sop: '%s'\n", padding, op);
+                ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+                snprintf(&buffer[*offset], bytes_to_write + 1, "%sop: '%s'\n", padding, op);
+                *offset += bytes_to_write;
+            }
+
+            { // print LHS
+                bytes_to_write = snprintf(NULL, 0, "%slhs:\n", padding);
+                ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+                snprintf(&buffer[*offset], bytes_to_write + 1, "%slhs:\n", padding);
+                *offset += bytes_to_write;
+
+                ast_expression_print(
+                    expr->expr.infix_expression.lhs, indent_level + 1,
+                    buffer, buffer_len, offset
+                );
+            }
+
+            { // print RHS
+                bytes_to_write = snprintf(NULL, 0, "%srhs:\n", padding);
+                ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+                snprintf(&buffer[*offset], bytes_to_write + 1, "%srhs:\n", padding);
+                *offset += bytes_to_write;
+
+                ast_expression_print(
+                    expr->expr.infix_expression.rhs, indent_level + 1,
+                    buffer, buffer_len, offset
+                );
+            }
+        } break;
+
         default:
         {
-            assert(0 && "Unhandled expression kind");
+            const char *kind = ast_expression_kind_to_str(expr->kind);
+            bytes_to_write = snprintf(NULL, 0, "%sERROR: invalid expression kind: \"%s\" (%i)\n", padding, kind, expr->kind);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%sERROR: invalid expression kind: \"%s\" (%i)\n", padding, kind, expr->kind);
+            *offset += bytes_to_write;
         } break;
     }
 
@@ -501,8 +564,6 @@ Statement parse_expression_statement(Parser *p)
 Expression parse_expression(Parser *p, Operator_Precidence precidence)
 {
     Expression expr;
-    Expression inexpr;
-    bool should_parse_infix = false;
 
     switch (p->cur_token.kind)
     {
@@ -532,33 +593,17 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
 
         default:
         {
-            if (precidence == LOWEST) precidence = 0;
-            assert(0 && "unhandled case");
+            assert(0 && "unhandled expression kind");
         } break;
-    }
-
-    if (
-        expect_peek(p, TK_PLUS) || expect_peek(p, TK_MINUS) 
-        || expect_peek(p, TK_ASTERISK) || expect_peek(p, TK_SLASH)
-    )
-    {
-        inexpr.kind = AST_INFIX_EXPRESSION;
-        inexpr.expr.infix_expression.lhs = malloc(sizeof(Expression));
-        assert(inexpr.expr.infix_expression.lhs);
-        memcpy(inexpr.expr.infix_expression.lhs, &expr, sizeof(Expression));
-
-        inexpr.expr.infix_expression.rhs = malloc(sizeof(Expression));
-        assert(inexpr.expr.infix_expression.rhs);
-        should_parse_infix = true;
     }
 
     while (!peek_token_is(p, TK_SEMICOLON) && (precidence < peek_precidence(p)))
     {
         parser_next_token(p);
-        parse_infix_expression(p, &inexpr.expr.infix_expression);
+        expr = parse_infix_expression(p, &expr);
     }
 
-    return should_parse_infix ? inexpr : expr;
+    return expr;
 }
 
 // TODO(HS): better mem allocs
@@ -645,24 +690,28 @@ Prefix_Expression parse_prefix_expression(Parser *p)
     return expr;
 }
 
-void parse_infix_expression(Parser *p, Infix_Expression *ie)
+// NOTE(HS): possibly need to do the precidence fix here
+// void parse_infix_expression(Parser *p, Infix_Expression *ie)
+Expression parse_infix_expression(Parser *p, Expression *lhs)
 {
-    Operator_Precidence precidence = cur_precidence(p);
+    Expression expr = {
+        .kind = AST_INFIX_EXPRESSION,
+        .expr.infix_expression = {
+            .op = p->cur_token.kind
+        }
+    };
 
-    switch (p->cur_token.kind)
-    {
-        case TK_PLUS:     { ie->op[0] = '+'; } break;
-        case TK_MINUS:    { ie->op[0] = '-'; } break;
-        case TK_ASTERISK: { ie->op[0] = '*'; } break;
-        case TK_SLASH:    { ie->op[0] = '/'; } break;
+    expr.expr.infix_expression.lhs = malloc(sizeof(Expression));
+    assert(expr.expr.infix_expression.lhs);
+    expr.expr.infix_expression.rhs = malloc(sizeof(Expression));
+    assert(expr.expr.infix_expression.rhs);
 
-        default:
-        {
-            assert(0 && "Invalid operator encountered whilst parsing infix expression");
-        } break;
-    }
+    memcpy(expr.expr.infix_expression.lhs, lhs, sizeof(Expression));
 
+    Operator_Precidence precidence = precidence_of(p->cur_token.kind);
     parser_next_token(p);
     Expression rhs = parse_expression(p, precidence);
-    memcpy(ie->rhs, &rhs, sizeof(Expression));
+    memcpy(expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
+
+    return expr;
 }

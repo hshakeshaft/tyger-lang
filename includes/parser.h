@@ -5,6 +5,8 @@
 #include "ast.h"
 
 #ifndef INOUT
+/// markup for reminiding myself that a (pointer) parameter is both an input param
+/// and (potentially) mutated.
 #define INOUT
 #endif
 

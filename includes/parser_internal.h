@@ -22,6 +22,8 @@ Operator_Precidence precidence_of(Token_Kind k);
 Operator_Precidence cur_precidence(const Parser *p);
 Operator_Precidence peek_precidence(const Parser *p);
 
+const char *op_to_string(Token_Kind op);
+
 bool cur_token_is(Parser *p, Token_Kind kind);
 bool peek_token_is(Parser *p, Token_Kind kind);
 bool expect_peek(Parser *p, Token_Kind kind);
@@ -44,6 +46,6 @@ Ident_Expression parse_ident(Parser *p);
 Int_Expression parse_int(Parser *p);
 Float_Expression parse_float(Parser *p);
 Prefix_Expression parse_prefix_expression(Parser *p);
-void parse_infix_expression(Parser *p, Infix_Expression *ie);
+Expression parse_infix_expression(Parser *p, Expression *lhs);
 
 #endif // TYGER_PARSER_INTERNAL_H_

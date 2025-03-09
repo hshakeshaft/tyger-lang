@@ -57,7 +57,7 @@ typedef struct
 
 typedef struct
 {
-    char op[2];
+    Token_Kind op;
     Expression *lhs;
     Expression *rhs;
 } Infix_Expression;
