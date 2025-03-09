@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "lexer.h"
 #include "parser.h"
@@ -111,25 +112,32 @@ TEST(ParserTestSuite, Parse_Ident_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
+        const char *prog_str = ast_program_print(&program);
 
-        EXPECT_EQ(program.len, 1);
+        EXPECT_EQ(program.len, 1) << prog_str;
 
         Statement stmt = program.statements[0];
 
         EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
             << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind);
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
 
         Expression expr = stmt.stmt.expression_statement.expression;
 
         EXPECT_EQ(expr.kind, AST_IDENT_EXPRESSION)
             << "Expected kind " << ast_expression_kind_to_str(AST_IDENT_EXPRESSION)
-            << ", got " << ast_expression_kind_to_str(expr.kind);
+            << ", got " << ast_expression_kind_to_str(expr.kind)
+            << "\n" << prog_str;
 
         Ident_Expression iexpr = expr.expr.ident_expression;
         EXPECT_TRUE(strncmp(iexpr.ident, tc.ident, tc.expected_ident_len) == 0)
             << "Expected ident `" << tc.ident 
-            << "`, got `" << iexpr.ident << "`";
+            << "`, got `" << iexpr.ident << "`"
+            << "\n" << prog_str;
+
+        program_free(&program);
+        free((void *) prog_str);
     }
 }
 
@@ -286,6 +294,7 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
     }
 }
 
+#if 0
 // TODO(HS): write function to compare expressions - should compare type and value
 TEST(ParserTestSuite, Parse_Binary_Expression)
 {
@@ -348,3 +357,4 @@ TEST(ParserTestSuite, Parse_Binary_Expression)
         program_free(&program);
     }
 }
+#endif

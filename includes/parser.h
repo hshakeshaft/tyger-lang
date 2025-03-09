@@ -4,6 +4,10 @@
 #include "lexer.h"
 #include "ast.h"
 
+#ifndef INOUT
+#define INOUT
+#endif
+
 typedef struct
 {
     Lexer lexer;
@@ -27,6 +31,18 @@ void parser_init(Parser *p, Lexer *l);
 Program parser_parse_program(Parser *p);
 void program_free(Program *prog);
 void expression_free(Expression *expr);
+
+/// Debugging functions which print the AST
+/// NOTE(HS): prints in YAML format
+const char *ast_program_print(const Program *prog);
+
+void ast_expression_print(
+    const Expression *expr,
+    int indent_level,
+    INOUT char *buffer,
+    INOUT size_t *buffer_len,
+    INOUT size_t *offset
+);
 
 #if defined(__cplusplus)
 }

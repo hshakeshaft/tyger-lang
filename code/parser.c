@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "ast.h"
@@ -37,6 +38,129 @@ inline Operator_Precidence cur_precidence(const Parser *p)
 inline Operator_Precidence peek_precidence(const Parser *p)
 {
     return precidence_of(p->peek_token.kind);
+}
+
+static void ast_resize_program_buffer(
+    INOUT char *buffer,
+    INOUT size_t *length,
+    size_t offset,
+    int bytes_to_write
+)
+{
+    if ((offset + bytes_to_write) >= *length)
+    {
+        char *new_buffer = realloc(buffer, *length * 2);
+        *length *= 2;
+        if (new_buffer != buffer) buffer = new_buffer;
+    }
+}
+
+// TODO(HS): handle other statement kinds
+const char *ast_program_print(const Program *prog)
+{
+    size_t ast_buffer_len = 1024;
+    size_t offset = 0;
+    char *ast_buffer = malloc(sizeof(char) * ast_buffer_len);
+
+    int bytes_to_write;
+
+    const char *ast_start = "---\nprogram:\n  statements:\n";
+    bytes_to_write = snprintf(NULL, 0, "%s", ast_start);
+    snprintf(ast_buffer, bytes_to_write + 1, "%s", ast_start);
+    offset += bytes_to_write;
+
+    for (size_t i = 0; i < prog->len; ++i)
+    {
+        Statement *stmt = &prog->statements[i];
+        const char *kind = ast_statement_kind_to_str(stmt->kind);
+
+        // resize buffer if required
+        bytes_to_write = snprintf(NULL, 0, "    - kind: %s\n", kind);
+        if (offset + bytes_to_write >= ast_buffer_len)
+        {
+            char *new_ast_buffer = realloc(ast_buffer, ast_buffer_len * 2);
+            ast_buffer_len *= 2;
+            if (new_ast_buffer != ast_buffer) ast_buffer = new_ast_buffer;
+        }
+
+        snprintf(&ast_buffer[offset], bytes_to_write + 1, "    - kind: %s\n", kind);
+        offset += bytes_to_write;
+
+        switch (stmt->kind)
+        {
+            case AST_EXPRESSION_STATEMENT:
+            {
+                bytes_to_write = snprintf(NULL, 0, "      expr:\n");
+                snprintf(&ast_buffer[offset], bytes_to_write + 1, "      expr:\n");
+                offset += bytes_to_write;
+
+                ast_expression_print(
+                    &stmt->stmt.expression_statement.expression,
+                    1,
+                    ast_buffer,
+                    &ast_buffer_len,
+                    &offset
+                );
+            } break;
+
+            default:
+            {
+                assert(0 && "Unhandled statement kind");
+            } break;
+        }
+    }
+
+    snprintf(&ast_buffer[offset], 1, "%s", "\n");
+    offset += 1;
+    ast_buffer[offset] =  '\0';
+
+    return ast_buffer;
+}
+
+// void ast_expression_print(char *buffer, const Expression *expr, int indent_level)
+void ast_expression_print(
+    const Expression *expr,
+    int indent_level,
+    char *buffer,
+    size_t *buffer_len,
+    size_t *offset
+)
+{
+    #define INDENT_NUM_SPACES 2
+    int num_spaces = (INDENT_NUM_SPACES * indent_level) + 6;
+
+    char *padding = malloc(sizeof(char) * num_spaces);
+    assert(padding && "failed to allocate buffer");
+    memset(padding, ' ', num_spaces);
+
+    int bytes_to_write;
+
+    switch (expr->kind)
+    {
+        case AST_IDENT_EXPRESSION:
+        {
+            // printf("%skind: %s\n", padding, ast_expression_kind_to_str(expr->kind));
+            // printf("%sident: %s\n", padding, expr->expr.ident_expression.ident);
+            const char *expr_kind = ast_expression_kind_to_str(expr->kind);
+
+            bytes_to_write = snprintf(NULL, 0, "%skind: %s\n", padding, expr_kind);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%skind: %s\n", padding, expr_kind);
+            *offset += bytes_to_write;
+
+            bytes_to_write = snprintf(NULL, 0, "%sident: %s\n", padding, expr->expr.ident_expression.ident);
+            ast_resize_program_buffer(buffer, buffer_len, *offset, bytes_to_write);
+            snprintf(&buffer[*offset], bytes_to_write + 1, "%sident: %s\n", padding, expr->expr.ident_expression.ident);
+            *offset += bytes_to_write;
+        } break;
+
+        default:
+        {
+            assert(0 && "Unhandled expression kind");
+        } break;
+    }
+
+    free(padding);
 }
 
 void parser_init(Parser *p, Lexer *l)
