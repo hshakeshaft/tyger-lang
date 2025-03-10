@@ -7,6 +7,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
+#include "trace.h"
 
 // TODO(HS): add parser error checking
 
@@ -35,7 +36,7 @@ TEST(ParserTestSuite, Parse_Var_Statement)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 
@@ -78,7 +79,7 @@ TEST(ParserTestSuite, Parse_Return_Statements)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 
@@ -118,7 +119,7 @@ TEST(ParserTestSuite, Parse_Ident_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 
@@ -169,7 +170,7 @@ TEST(ParserTestSuite, Parse_Int_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 
@@ -217,7 +218,7 @@ TEST(ParserTestSuite, Parse_Float_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 
@@ -242,6 +243,7 @@ TEST(ParserTestSuite, Parse_Float_Expression)
         free((void *) prog_str);
     }
 }
+
 
 // TODO(HS): decide if I want to allow `!<number>` in parser
 // TODO(HS): ^above for strings too
@@ -275,9 +277,9 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
-        EXPECT_EQ(program.len, 1);
+        EXPECT_EQ(program.len, 1) << prog_str;
 
         Statement stmt = program.statements[0];
 
@@ -317,7 +319,6 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
     }
 }
 
-// TODO(HS): write function to compare expressions - should compare type and value
 TEST(ParserTestSuite, Parse_Binary_Expression)
 {
     struct Test_Case
@@ -348,7 +349,7 @@ TEST(ParserTestSuite, Parse_Binary_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 
@@ -453,7 +454,7 @@ TEST(ParserTestSuite, Parse_Nested_Binary_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = ast_program_print(&program);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
 
         EXPECT_EQ(program.len, 1) << prog_str;
 

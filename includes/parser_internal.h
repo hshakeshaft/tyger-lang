@@ -22,8 +22,6 @@ Operator_Precidence precidence_of(Token_Kind k);
 Operator_Precidence cur_precidence(const Parser *p);
 Operator_Precidence peek_precidence(const Parser *p);
 
-const char *op_to_string(Token_Kind op);
-
 bool cur_token_is(Parser *p, Token_Kind kind);
 bool peek_token_is(Parser *p, Token_Kind kind);
 bool expect_peek(Parser *p, Token_Kind kind);
