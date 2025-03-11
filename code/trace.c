@@ -50,6 +50,18 @@ const char *program_print_ast(const Program *prog, AST_Print_Format format)
     {
         Statement *stmt = &prog->statements[i];
         print_statement(stmt, buffer, &buffer_len, &buffer_offset);
+
+        // if PLAIN format and not final statement append newlind
+        if (format == PRINT_FORMAT_PLAIN)
+        {
+            if (i + 1 < prog->len)
+            {
+                int bytes_to_write = snprintf(NULL, 0, "\n");
+                ast_print_resize_debug_buffer(buffer, &buffer_len, buffer_offset, bytes_to_write);
+                snprintf(&buffer[buffer_offset], bytes_to_write + 1, "\n");
+                buffer_offset += bytes_to_write;
+            }
+        }
     }
 
     // Write final newline **IF** the format is YAML.
@@ -94,14 +106,7 @@ void ast_print_statement_plain(
     switch (stmt->kind)
     {
         case AST_VAR_STATEMENT:
-        {
-            // #define VAR_FMT "(var %s "
-            // const char *ident = stmt->stmt.var_statement.ident;
-            // bytes_to_write = snprintf(NULL, 0, VAR_FMT, ident);
-            // ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
-            // snprintf(&buffer[*buffer_offset], bytes_to_write + 1, VAR_FMT, ident);
-            // TODO(HS): write expression)
-        } break;
+        {} break;
 
         case AST_RETURN_STATEMENT:
         {} break;

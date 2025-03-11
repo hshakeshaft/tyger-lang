@@ -392,57 +392,37 @@ TEST(ParserTestSuite, Parse_Binary_Expression)
     }
 }
 
-// TODO(HS): validate with different nesting - mimic "ast debug" print used in the
-// interpreter book. Entirely because manually building as I am doing is **PAINFUL!**.
-TEST(ParserTestSuite, Parse_Nested_Binary_Expression)
+TEST(ParserTestSuite, Parse_Operator_Precidence)
 {
     struct Test_Case
     {
         const char *input;
-        Expression expected;
+        // debug print out of the AST in `plain` format
+        const char *expected_ast;
+        size_t expected_len;
     };
 
-    // 5 + 4 + 3
-    Expression lhs1_lhs{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
-    Expression lhs1_rhs{ AST_INT_EXPRESSION, { .int_expression = { 4 } } };
-    Expression lhs1{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_PLUS, &lhs1_lhs, &lhs1_rhs }} };
-    Expression rhs1{ AST_INT_EXPRESSION, { .int_expression = { 3 } }};
-    Expression expr1{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_PLUS, &lhs1, &rhs1 } } };
-
-    // 5 - 4 - 3
-    Expression lhs2_lhs{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
-    Expression lhs2_rhs{ AST_INT_EXPRESSION, { .int_expression = { 4 } } };
-    Expression lhs2{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_MINUS, &lhs2_lhs, &lhs2_rhs }} };
-    Expression rhs2{ AST_INT_EXPRESSION, { .int_expression = { 3 } }};
-    Expression expr2{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_MINUS, &lhs2, &rhs2 } } };
-
-    // 5 + 4 - 3
-    Expression lhs3_lhs{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
-    Expression lhs3_rhs{ AST_INT_EXPRESSION, { .int_expression = { 4 } } };
-    Expression lhs3{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_PLUS, &lhs3_lhs, &lhs3_rhs }} };
-    Expression rhs3{ AST_INT_EXPRESSION, { .int_expression = { 3 } }};
-    Expression expr3{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_MINUS, &lhs3, &rhs3 } } };
-
-    // 5 - 4 + 3
-    Expression lhs4_lhs{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
-    Expression lhs4_rhs{ AST_INT_EXPRESSION, { .int_expression = { 4 } } };
-    Expression lhs4{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_MINUS, &lhs4_lhs, &lhs4_rhs }} };
-    Expression rhs4{ AST_INT_EXPRESSION, { .int_expression = { 3 } }};
-    Expression expr4{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_PLUS, &lhs4, &rhs4 } } };
-
-    // 5 + 4 * 3
-    Expression lhs5{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
-    Expression rhs5_lhs{ AST_INT_EXPRESSION, { .int_expression = { 4 } } };
-    Expression rhs5_rhs{ AST_INT_EXPRESSION, { .int_expression = { 3 } } };
-    Expression rhs5{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_ASTERISK, &rhs5_lhs, &rhs5_rhs } } };
-    Expression expr5{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_PLUS, &lhs5, &rhs5 } }};
-
     std::vector<Test_Case> test_cases{
-        { "5 + 4 + 3;", expr1 },
-        { "5 - 4 - 3;", expr2 },
-        { "5 + 4 - 3;", expr3 },
-        { "5 - 4 + 3;", expr4 },
-        { "5 + 4 * 3;", expr5 },
+        { "5 + 4;",     "(5 + 4)"      , 1 },
+        { "5 + 4 + 3;", "((5 + 4) + 3)", 1 },
+        { "5 - 4 - 3;", "((5 - 4) - 3)", 1 },
+        { "5 + 4 - 3;", "((5 + 4) - 3)", 1 },
+        { "5 * 4 / 3;", "((5 * 4) / 3)", 1 },
+
+        { "5 > 4 == 3 < 4;", "((5 > 4) == (3 < 4))", 1 },
+        { "5 > 4 != 3 < 4;", "((5 > 4) != (3 < 4))", 1 },
+
+        { "3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))", 1 },
+
+        { "-a * b;",    "((-a) * b)",    1 },
+        { "a - b + c;", "((a - b) + c)", 1 },
+        { "a + b * c;", "(a + (b * c))", 1 },
+        { "a * b * c;", "((a * b) * c)", 1 },
+        { "a + b / c;", "(a + (b / c))", 1 },
+
+        { "a + b * c + d / e - f;", "(((a + (b * c)) + (d / e)) - f)", 1 },
+
+        { "a + b; -c * d;", "(a + b)\n((-c) * d)", 2 },
     };
 
     for (auto& tc : test_cases)
@@ -454,119 +434,27 @@ TEST(ParserTestSuite, Parse_Nested_Binary_Expression)
         parser_init(&p, &l);
 
         Program program = parser_parse_program(&p);
-        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_PLAIN);
+        const char *prog_yml = program_print_ast(&program, PRINT_FORMAT_YAML);
 
-        EXPECT_EQ(program.len, 1) << prog_str;
+        EXPECT_EQ(program.len, tc.expected_len) << "\n" << prog_str << "\n" << prog_yml;
 
-        Statement stmt = program.statements[0];
-        EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
-            << "Expected kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
-            << ", got " << ast_statement_kind_to_str(stmt.kind)
-            << "\n" << prog_str;
+        for (size_t i = 0; i < program.len; ++i)
+        {
+            Statement stmt = program.statements[i];
 
-        Expression expr = stmt.stmt.expression_statement.expression;
-        EXPECT_EQ(expr.kind, tc.expected.kind)
-            << "Expected kind " << ast_expression_kind_to_str(tc.expected.kind)
-            << ", got " << ast_expression_kind_to_str(expr.kind)
-            << "\n" << prog_str;
-
-        Infix_Expression inexpr1 = expr.expr.infix_expression;
-        Infix_Expression tc_expr = expr.expr.infix_expression;
-
-        EXPECT_EQ(inexpr1.op, tc_expr.op) 
-            << "Expected operator " << token_kind_to_string(tc_expr.op)
-            << ", got " << token_kind_to_string(inexpr1.op)
-            << "\n" << prog_str;
-
-        { // validate LHS
-            EXPECT_EQ(inexpr1.lhs->kind, tc_expr.lhs->kind)
-                << "Expected LHS kind " << ast_expression_kind_to_str(tc_expr.lhs->kind)
-                << ", got " << ast_expression_kind_to_str(inexpr1.lhs->kind)
-                << "\n" << prog_str;
-
-            if (inexpr1.lhs->kind == AST_INT_EXPRESSION)
-            {
-                EXPECT_EQ(inexpr1.lhs->expr.int_expression.value, tc_expr.lhs->expr.int_expression.value)
-                    << prog_str;
-            }
-            else if (inexpr1.lhs->kind == AST_INFIX_EXPRESSION)
-            {
-                Token_Kind act_op  = inexpr1.lhs->expr.infix_expression.op;
-                Expression *act_lhs = inexpr1.lhs->expr.infix_expression.lhs;
-                Expression *act_rhs = inexpr1.lhs->expr.infix_expression.rhs;
-
-                Token_Kind exp_op  = tc_expr.lhs->expr.infix_expression.op;
-                Expression *exp_lhs = tc_expr.lhs->expr.infix_expression.lhs;
-                Expression *exp_rhs = tc_expr.lhs->expr.infix_expression.rhs;
-
-                EXPECT_EQ(act_op, exp_op)
-                    << "Expected operator " << token_kind_to_string(exp_op)
-                    << ", got " << token_kind_to_string(act_op)
-                    << "\n" << prog_str;
-                
-                EXPECT_EQ(act_lhs->kind, exp_lhs->kind) 
-                    << "Expected kind " << ast_expression_kind_to_str(exp_lhs->kind)
-                    << ", got " << ast_expression_kind_to_str(act_lhs->kind)
-                    << "\n" << prog_str;
-
-                EXPECT_EQ(act_lhs->expr.int_expression.value, exp_lhs->expr.int_expression.value) 
-                    << prog_str;
-
-                EXPECT_EQ(act_rhs->kind, exp_rhs->kind) 
-                    << "Expected operator " << token_kind_to_string(exp_op)
-                    << ", got " << token_kind_to_string(act_op)
-                    << "\n" << prog_str;
-
-                EXPECT_EQ(act_rhs->expr.int_expression.value, exp_rhs->expr.int_expression.value) 
-                    << prog_str;
-            }
+            EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT)
+                << "Expected statement kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+                << ", got " << ast_statement_kind_to_str(stmt.kind)
+                << "\n" << prog_yml;
         }
 
-        { // validate RHS
-            EXPECT_EQ(inexpr1.rhs->kind, tc_expr.rhs->kind)
-                << "Expected RHS kind " << ast_expression_kind_to_str(tc_expr.rhs->kind)
-                << ", got " << ast_expression_kind_to_str(inexpr1.rhs->kind)
-                << "\n" << prog_str;
-
-            if (inexpr1.rhs->kind == AST_INT_EXPRESSION)
-            {
-                EXPECT_EQ(inexpr1.rhs->expr.int_expression.value, tc_expr.rhs->expr.int_expression.value)
-                    << prog_str;
-            }
-            else if (inexpr1.rhs->kind == AST_INFIX_EXPRESSION)
-            {
-                Token_Kind act_op   = inexpr1.rhs->expr.infix_expression.op;
-                Expression *act_lhs = inexpr1.rhs->expr.infix_expression.lhs;
-                Expression *act_rhs = inexpr1.rhs->expr.infix_expression.rhs;
-
-                Token_Kind exp_op   = tc_expr.rhs->expr.infix_expression.op;
-                Expression *exp_lhs = tc_expr.rhs->expr.infix_expression.lhs;
-                Expression *exp_rhs = tc_expr.rhs->expr.infix_expression.rhs;
-
-                EXPECT_EQ(act_op, exp_op)
-                    << "Expected operator " << token_kind_to_string(exp_op)
-                    << ", got " << token_kind_to_string(act_op)
-                    << "\n" << prog_str;
-                
-                EXPECT_EQ(act_lhs->kind, exp_lhs->kind) 
-                    << "Expected kind " << ast_expression_kind_to_str(exp_lhs->kind)
-                    << ", got " << ast_expression_kind_to_str(act_lhs->kind)
-                    << "\n" << prog_str;
-
-                EXPECT_EQ(act_lhs->expr.int_expression.value, exp_lhs->expr.int_expression.value) 
-                    << prog_str;
-
-                EXPECT_EQ(act_rhs->kind, exp_rhs->kind) 
-                    << "Expected operator " << token_kind_to_string(exp_op)
-                    << ", got " << token_kind_to_string(act_op)
-                    << "\n" << prog_str;
-
-                EXPECT_EQ(act_rhs->expr.int_expression.value, exp_rhs->expr.int_expression.value) 
-                    << prog_str;
-            }
-        }
+        std::string act_ast{prog_str};
+        std::string exp_ast{tc.expected_ast};
+        EXPECT_EQ(act_ast, exp_ast) << "\n" << prog_yml;
 
         program_free(&program);
         free((void *) prog_str);
+        free((void *) prog_yml);
     }
 }
