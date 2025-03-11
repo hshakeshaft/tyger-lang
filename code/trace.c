@@ -8,6 +8,7 @@
 #include "trace.h"
 #include "trace_internal.h"
 
+// TODO(HS): collapse into 1 #define called AST_YAML_SPACE_PER_INDENT (or something)
 // NOTE(HS): the following 3 properties are only germane to YAML generation
 // How much indentation to apply to the statements list key
 #define AST_STATEMENTS_LIST_INDENT 2
@@ -20,18 +21,19 @@ const char *program_print_ast(const Program *prog, AST_Print_Format format)
 {
     Print_Header_Fn     print_header;
     Print_Statement_Fn  print_statement;
-    Print_Expression_Fn print_expression;
 
     switch (format)
     {
         case PRINT_FORMAT_PLAIN:
-        { assert(0 && "unimplemented"); } break;
+        { 
+            print_header     = &ast_print_header_plain;
+            print_statement  = &ast_print_statement_plain;
+        } break;
 
         case PRINT_FORMAT_YAML:
         {
             print_header     = &ast_print_header_yaml;
             print_statement  = &ast_print_statement_yaml;
-            print_expression = &ast_print_expression_yaml;
         } break;
     }
 
@@ -47,19 +49,226 @@ const char *program_print_ast(const Program *prog, AST_Print_Format format)
     for (size_t i = 0; i < prog->len; ++i)
     {
         Statement *stmt = &prog->statements[i];
-        print_statement(stmt, print_expression, buffer, &buffer_len, &buffer_offset);
+        print_statement(stmt, buffer, &buffer_len, &buffer_offset);
     }
 
-    { // write final newline and add null terminator
+    // Write final newline **IF** the format is YAML.
+    if (format == PRINT_FORMAT_YAML)
+    {
         int bytes_to_write = snprintf(NULL, 0, "\n");
         ast_print_resize_debug_buffer(buffer, &buffer_len, buffer_offset, bytes_to_write);
         snprintf(&buffer[buffer_offset], bytes_to_write + 1, "\n");
         buffer_offset += bytes_to_write;
-
-        buffer[buffer_offset] = '\0';
     }
 
+    // Add null-terminator.
+    buffer[buffer_offset] = '\0';
     return buffer;
+}
+
+void ast_print_header_plain(
+    INOUT char *buffer,
+    INOUT size_t *buffer_len,
+    INOUT size_t *buffer_offset
+)
+{
+    assert(buffer);
+    assert(buffer_len);
+    assert(buffer_offset);
+}
+
+void ast_print_statement_plain(
+    const Statement *stmt,
+    INOUT char *buffer,
+    INOUT size_t *buffer_len,
+    INOUT size_t *buffer_offset
+)
+{
+    assert(stmt);
+    assert(buffer);
+    assert(buffer_len);
+    assert(buffer_offset);
+
+    int bytes_to_write;
+
+    switch (stmt->kind)
+    {
+        case AST_VAR_STATEMENT:
+        {
+            // #define VAR_FMT "(var %s "
+            // const char *ident = stmt->stmt.var_statement.ident;
+            // bytes_to_write = snprintf(NULL, 0, VAR_FMT, ident);
+            // ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            // snprintf(&buffer[*buffer_offset], bytes_to_write + 1, VAR_FMT, ident);
+            // TODO(HS): write expression)
+        } break;
+
+        case AST_RETURN_STATEMENT:
+        {} break;
+
+        case AST_EXPRESSION_STATEMENT:
+        {
+            { // begin expression
+                bytes_to_write = snprintf(NULL, 0, "(");
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "(");
+                *buffer_offset += bytes_to_write;
+            }
+
+            { // write expression
+                const Expression *expr = &stmt->stmt.expression_statement.expression;
+                ast_print_expression_plain(expr, buffer, buffer_len, buffer_offset);
+            }
+
+            { // end expression
+                bytes_to_write = snprintf(NULL, 0, ")");
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, ")");
+                *buffer_offset += bytes_to_write;
+            }
+        } break;
+
+        default:
+        {
+            assert(0 && "Unreachable case - unhandled statement kind");
+        } break;
+    }
+}
+
+void ast_print_expression_plain(
+    const Expression *expr,
+    INOUT char *buffer,
+    INOUT size_t *buffer_len,
+    INOUT size_t *buffer_offset
+)
+{
+    assert(expr);
+    assert(buffer);
+    assert(buffer_len);
+    assert(buffer_offset);
+
+    int bytes_to_write;
+
+    switch (expr->kind)
+    {
+        case AST_INT_EXPRESSION:
+        {
+            #define INT_EXPR_FMT "%i"
+            int32_t value = expr->expr.int_expression.value;
+            bytes_to_write = snprintf(NULL, 0, INT_EXPR_FMT, value);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(&buffer[*buffer_offset], bytes_to_write + 1, INT_EXPR_FMT, value);
+            *buffer_offset += bytes_to_write;
+        } break;
+
+        case AST_FLOAT_EXPRESSION:
+        {
+            #define FLOAT_EXPR_FMT "%f"
+            float value = expr->expr.float_expression.value;
+            bytes_to_write = snprintf(NULL, 0, FLOAT_EXPR_FMT, value);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(&buffer[*buffer_offset], bytes_to_write + 1, FLOAT_EXPR_FMT, value);
+            *buffer_offset += bytes_to_write;
+        } break;
+
+        case AST_IDENT_EXPRESSION:
+        {
+            #define IDENT_PLAIN_FMT "%s"
+            const char *ident = expr->expr.ident_expression.ident;
+            bytes_to_write = snprintf(NULL, 0, IDENT_PLAIN_FMT, ident);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(&buffer[*buffer_offset], bytes_to_write + 1, IDENT_PLAIN_FMT, ident);
+            *buffer_offset += bytes_to_write;
+        } break;
+
+        case AST_PREFIX_EXPRESSION:
+        {
+            { // write open prefix
+                #define PREFIX_START_PLAIN_FMT "(%c"
+                char op = expr->expr.prefix_expression.op;
+                bytes_to_write = snprintf(NULL, 0, PREFIX_START_PLAIN_FMT, op);
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PREFIX_START_PLAIN_FMT, op);
+                *buffer_offset += bytes_to_write;
+            }
+
+            { // write expression
+                const Expression *rhs = expr->expr.prefix_expression.rhs;
+                ast_print_expression_plain(rhs, buffer, buffer_len, buffer_offset);
+            }
+
+            { // write close prefix
+                #define PREFIX_END_PLAIN_FMT ")"
+                bytes_to_write = snprintf(NULL, 0, PREFIX_END_PLAIN_FMT);
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PREFIX_END_PLAIN_FMT);
+                *buffer_offset += bytes_to_write;
+            }
+        } break;
+
+        case AST_INFIX_EXPRESSION:
+        {
+            { // write LHS
+                const Expression *lhs = expr->expr.infix_expression.lhs;
+                switch (lhs->kind)
+                {
+                    case AST_INFIX_EXPRESSION:
+                    {
+                        bytes_to_write = snprintf(NULL, 0, "(");
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "(");
+                        *buffer_offset += bytes_to_write;
+
+                        ast_print_expression_plain(lhs, buffer, buffer_len, buffer_offset);
+
+                        bytes_to_write = snprintf(NULL, 0, ")");
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, ")");
+                        *buffer_offset += bytes_to_write;
+                    } break;
+
+                    default:
+                    {
+                        ast_print_expression_plain(lhs, buffer, buffer_len, buffer_offset);
+                    } break;
+                }
+            }
+
+            { // write operator
+                const char *op_str = op_to_string(expr->expr.infix_expression.op);
+                bytes_to_write = snprintf(NULL, 0, " %s ", op_str);
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, " %s ", op_str);
+                *buffer_offset += bytes_to_write;
+            }
+
+            { // write RHS
+                const Expression *rhs = expr->expr.infix_expression.rhs;
+                switch (rhs->kind)
+                {
+                    case AST_INFIX_EXPRESSION:
+                    {
+                        bytes_to_write = snprintf(NULL, 0, "(");
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "(");
+                        *buffer_offset += bytes_to_write;
+
+                        ast_print_expression_plain(rhs, buffer, buffer_len, buffer_offset);
+
+                        bytes_to_write = snprintf(NULL, 0, ")");
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, ")");
+                        *buffer_offset += bytes_to_write;
+                    } break;
+
+                    default:
+                    {
+                        ast_print_expression_plain(rhs, buffer, buffer_len, buffer_offset);
+                    } break;
+                }
+            }
+        } break;
+    }
 }
 
 void ast_print_header_yaml(
@@ -89,14 +298,12 @@ void ast_print_header_yaml(
 // TODO(HS): better allocation strategy for indentation
 void ast_print_statement_yaml(
     const Statement *stmt,
-    const Print_Expression_Fn print_expression,
     INOUT char *buffer,
     INOUT size_t *buffer_len,
     INOUT size_t *buffer_offset
 )
 {
     assert(stmt);
-    assert(print_expression);
     assert(buffer);
     assert(buffer_len);
     assert(buffer_offset);
@@ -167,7 +374,7 @@ void ast_print_statement_yaml(
                 *buffer_offset += bytes_to_write;
 
                 const Expression *expr = &stmt->stmt.expression_statement.expression;
-                print_expression(expr, buffer, buffer_len, buffer_offset, indent_level + 1);
+                ast_print_expression_yaml(expr, buffer, buffer_len, buffer_offset, indent_level + 1);
             } break;
 
             default:
