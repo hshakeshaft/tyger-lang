@@ -248,12 +248,23 @@ void ast_print_expression_yaml(
 
             case AST_PREFIX_EXPRESSION:
             {
-               #define EXPRESSION_FMT "%sexpr:\n"
-                bytes_to_write = snprintf(NULL, 0, EXPRESSION_FMT, padding);
-                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
-                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, EXPRESSION_FMT, padding);
-                *buffer_offset += bytes_to_write;
-                
+                { // write op
+                    #define EXPRESSION_OP_FMT "%sop: \"%c\"\n"
+                    char op = expr->expr.prefix_expression.op;
+                    bytes_to_write = snprintf(NULL, 0, EXPRESSION_OP_FMT, padding, op);
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, EXPRESSION_OP_FMT, padding, op);
+                    *buffer_offset += bytes_to_write;
+                }
+
+                { // write RHS expr
+                    #define EXPRESSION_FMT "%sexpr:\n"
+                    bytes_to_write = snprintf(NULL, 0, EXPRESSION_FMT, padding);
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, EXPRESSION_FMT, padding);
+                    *buffer_offset += bytes_to_write;
+                }
+
                 const Expression *nexpr = expr->expr.prefix_expression.rhs;
                 ast_print_expression_yaml(nexpr, buffer, buffer_len, buffer_offset, indent_level + 1);
             } break;
