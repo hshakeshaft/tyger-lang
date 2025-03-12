@@ -8,6 +8,9 @@
 #include "trace.h"
 #include "trace_internal.h"
 
+// TODO(HS): this is a perfect excuse for creating a "string builder" API, might
+// make things more concise.
+
 // TODO(HS): collapse into 1 #define called AST_YAML_SPACE_PER_INDENT (or something)
 // NOTE(HS): the following 3 properties are only germane to YAML generation
 // How much indentation to apply to the statements list key
@@ -106,7 +109,22 @@ void ast_print_statement_plain(
     switch (stmt->kind)
     {
         case AST_VAR_STATEMENT:
-        {} break;
+        {
+            #define PLAIN_IDENT_FMT "(var %s ("
+            const char *ident = stmt->stmt.var_statement.ident;
+            bytes_to_write = snprintf(NULL, 0, PLAIN_IDENT_FMT, ident);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PLAIN_IDENT_FMT, ident);
+            *buffer_offset += bytes_to_write;
+
+            const Expression *expr = &stmt->stmt.var_statement.expression;
+            ast_print_expression_plain(expr, buffer, buffer_len, buffer_offset);
+
+            bytes_to_write = snprintf(NULL, 0, "))");
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "))");
+            *buffer_offset += bytes_to_write;
+        } break;
 
         case AST_RETURN_STATEMENT:
         {} break;
@@ -357,7 +375,9 @@ void ast_print_statement_yaml(
                 ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
                 snprintf(&buffer[*buffer_offset], bytes_to_write + 1, EXPRESSION_FMT, padding);
                 *buffer_offset += bytes_to_write;
-                // TODO(HS): write expr
+
+                const Expression *expr = &stmt->stmt.var_statement.expression;
+                ast_print_expression_yaml(expr, buffer, buffer_len, buffer_offset, indent_level + 1);
             } break;
 
             case AST_RETURN_STATEMENT:
