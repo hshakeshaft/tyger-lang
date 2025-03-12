@@ -354,13 +354,22 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         } break;
         
         case TK_MINUS:
+        case TK_BANG:
         {
             expr.kind = AST_PREFIX_EXPRESSION;
             expr.expr.prefix_expression = parse_prefix_expression(p);
         } break;
 
+        case TK_FALSE:
+        case TK_TRUE:
+        {
+            expr.kind = AST_BOOLEAN_EXPRESSION;
+            expr.expr.boolean_expression = parse_boolean(p);
+        } break;
+
         default:
         {
+            fprintf(stderr, "unhandled token kind for expression: %s\n", token_kind_to_string(p->cur_token.kind));
             assert(0 && "unhandled expression kind");
         } break;
     }
@@ -428,6 +437,14 @@ Float_Expression parse_float(Parser *p)
     return fexpr;
 }
 
+Boolean_Expression parse_boolean(Parser *p)
+{
+    Boolean_Expression expr = {
+        .value = p->cur_token.kind == TK_TRUE ? true : false
+    };
+    return expr;
+}
+
 // TODO(HS): better allocation strategy for expressions
 // TODO(HS): parse prefix op for idents (& call expr?)
 Prefix_Expression parse_prefix_expression(Parser *p)
@@ -440,6 +457,11 @@ Prefix_Expression parse_prefix_expression(Parser *p)
         case TK_MINUS:
         {
             expr.op = '-';
+        } break;
+
+        case TK_BANG:
+        {
+            expr.op = '!';
         } break;
 
         default:

@@ -263,6 +263,46 @@ TEST(ParserTestSuite, Parse_Float_Expression)
     }
 }
 
+TEST(ParserTestSuite, Parse_Boolean_Expression)
+{
+    struct Test_Case
+    {
+        const char *input;
+        Expression expected;
+    };
+
+    Expression bexpr1 = Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { false } } };
+    Expression bexpr2 = Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { true } } };
+
+    std::vector<Test_Case> test_cases{
+        { "false;",  Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { false } } } },
+        { "true;",   Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { true } } } },
+        { "!false;", Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '!', &bexpr1 } } } },
+        { "!true;",  Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '!', &bexpr2 } } } },
+    };
+
+    for (auto& tc : test_cases)
+    {
+        Lexer l;
+        Parser p;
+
+        lexer_init(&l, tc.input);
+        parser_init(&p, &l);
+
+        Program program = parser_parse_program(&p);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
+
+        EXPECT_EQ(program.len, 1) << prog_str;
+
+        Statement stmt = program.statements[0];
+        
+        Expression act = stmt.stmt.expression_statement.expression;
+        test_expression(tc.expected, act, prog_str);
+
+        program_free(&program);
+        free((void*) prog_str);
+    }
+}
 
 // TODO(HS): decide if I want to allow `!<number>` in parser
 // TODO(HS): ^above for strings too

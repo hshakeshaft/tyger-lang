@@ -43,6 +43,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence);
 Ident_Expression parse_ident(Parser *p);
 Int_Expression parse_int(Parser *p);
 Float_Expression parse_float(Parser *p);
+Boolean_Expression parse_boolean(Parser *p);
 Prefix_Expression parse_prefix_expression(Parser *p);
 Expression parse_infix_expression(Parser *p, Expression *lhs);
 
