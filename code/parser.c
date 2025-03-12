@@ -367,6 +367,11 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
             expr.expr.boolean_expression = parse_boolean(p);
         } break;
 
+        case TK_LPAREN:
+        {
+            expr = parse_grouped_expression(p);
+        } break;
+
         default:
         {
             fprintf(stderr, "unhandled token kind for expression: %s\n", token_kind_to_string(p->cur_token.kind));
@@ -500,6 +505,18 @@ Expression parse_infix_expression(Parser *p, Expression *lhs)
     parser_next_token(p);
     Expression rhs = parse_expression(p, precidence);
     memcpy(expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
+
+    return expr;
+}
+
+Expression parse_grouped_expression(Parser *p)
+{
+    parser_next_token(p);
+    
+    Expression expr = parse_expression(p, LOWEST);
+
+    assert(peek_token_is(p, TK_RPAREN) && "Peeked token is not RParen");
+    parser_next_token(p);
 
     return expr;
 }

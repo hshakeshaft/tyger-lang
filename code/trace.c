@@ -216,26 +216,54 @@ void ast_print_expression_plain(
 
         case AST_PREFIX_EXPRESSION:
         {
-            { // write open prefix
-                #define PREFIX_START_PLAIN_FMT "(%c"
-                char op = expr->expr.prefix_expression.op;
-                bytes_to_write = snprintf(NULL, 0, PREFIX_START_PLAIN_FMT, op);
-                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
-                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PREFIX_START_PLAIN_FMT, op);
-                *buffer_offset += bytes_to_write;
-            }
+            const Expression *rhs = expr->expr.prefix_expression.rhs;
 
-            { // write expression
-                const Expression *rhs = expr->expr.prefix_expression.rhs;
-                ast_print_expression_plain(rhs, buffer, buffer_len, buffer_offset);
-            }
+            switch (rhs->kind)
+            {
+                case AST_PREFIX_EXPRESSION:
+                case AST_INFIX_EXPRESSION:
+                {
+                    bytes_to_write = snprintf(NULL, 0, "%c", expr->expr.prefix_expression.op);
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    bytes_to_write = snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%c", expr->expr.prefix_expression.op);
+                    *buffer_offset += bytes_to_write;
 
-            { // write close prefix
-                #define PREFIX_END_PLAIN_FMT ")"
-                bytes_to_write = snprintf(NULL, 0, PREFIX_END_PLAIN_FMT);
-                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
-                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PREFIX_END_PLAIN_FMT);
-                *buffer_offset += bytes_to_write;
+                    bytes_to_write = snprintf(NULL, 0, "(");
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "(");
+                    *buffer_offset += bytes_to_write;
+
+                    ast_print_expression_plain(rhs, buffer, buffer_len, buffer_offset);
+
+                    bytes_to_write = snprintf(NULL, 0, ")");
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, ")");
+                    *buffer_offset += bytes_to_write;
+                } break; 
+
+                default:
+                {
+                    { // write open prefix
+                        #define PREFIX_START_PLAIN_FMT "(%c"
+                        char op = expr->expr.prefix_expression.op;
+                        bytes_to_write = snprintf(NULL, 0, PREFIX_START_PLAIN_FMT, op);
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PREFIX_START_PLAIN_FMT, op);
+                        *buffer_offset += bytes_to_write;
+                    }
+
+                    // write expression
+                    ast_print_expression_plain(rhs, buffer, buffer_len, buffer_offset);
+
+                    { // write close prefix
+                        #define PREFIX_END_PLAIN_FMT ")"
+                        bytes_to_write = snprintf(NULL, 0, PREFIX_END_PLAIN_FMT);
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PREFIX_END_PLAIN_FMT);
+                        *buffer_offset += bytes_to_write;
+                    }
+
+                } break;
             }
         } break;
 

@@ -46,5 +46,6 @@ Float_Expression parse_float(Parser *p);
 Boolean_Expression parse_boolean(Parser *p);
 Prefix_Expression parse_prefix_expression(Parser *p);
 Expression parse_infix_expression(Parser *p, Expression *lhs);
+Expression parse_grouped_expression(Parser *p);
 
 #endif // TYGER_PARSER_INTERNAL_H_
