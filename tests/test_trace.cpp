@@ -83,6 +83,9 @@ TEST(TracePlainTestSuite, Test_Trace_Expression_Statement)
         { "5 + 4 + 3;", "((5 + 4) + 3)" },
         { "5 + 4 - 3;", "((5 + 4) - 3)" },
         { "5 + 4 * 3;", "(5 + (4 * 3))" },
+
+        { "false;", "(false)" },
+        { "!true;", "((!true))" },
     };
 
     for (auto& tc : test_cases)

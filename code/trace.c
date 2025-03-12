@@ -194,6 +194,16 @@ void ast_print_expression_plain(
             *buffer_offset += bytes_to_write;
         } break;
 
+        case AST_BOOLEAN_EXPRESSION:
+        {
+            #define PLAIN_BOOLEAN_FMT "%s"
+            const char *value = expr->expr.boolean_expression.value ? "true" : "false";
+            bytes_to_write = snprintf(NULL, 0, PLAIN_BOOLEAN_FMT, value);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PLAIN_BOOLEAN_FMT, value);
+            *buffer_offset += bytes_to_write;
+        } break;
+
         case AST_IDENT_EXPRESSION:
         {
             #define IDENT_PLAIN_FMT "%s"
@@ -475,6 +485,16 @@ void ast_print_expression_yaml(
                 bytes_to_write = snprintf(NULL, 0, FLOAT_VALUE_FMT, padding, value);
                 ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
                 snprintf(&buffer[*buffer_offset], bytes_to_write + 1, FLOAT_VALUE_FMT, padding, value);
+                *buffer_offset += bytes_to_write;
+            } break;
+
+            case AST_BOOLEAN_EXPRESSION:
+            {
+                #define YAML_BOOLEAN_FMT "%svalue: %s\n"
+                const char *value = expr->expr.boolean_expression.value ? "true" : "false";
+                bytes_to_write = snprintf(NULL, 0, YAML_BOOLEAN_FMT, padding, value);
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, YAML_BOOLEAN_FMT, padding, value);
                 *buffer_offset += bytes_to_write;
             } break;
 
