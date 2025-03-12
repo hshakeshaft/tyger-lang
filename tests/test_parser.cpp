@@ -271,14 +271,9 @@ TEST(ParserTestSuite, Parse_Boolean_Expression)
         Expression expected;
     };
 
-    Expression bexpr1 = Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { false } } };
-    Expression bexpr2 = Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { true } } };
-
     std::vector<Test_Case> test_cases{
         { "false;",  Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { false } } } },
         { "true;",   Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { true } } } },
-        { "!false;", Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '!', &bexpr1 } } } },
-        { "!true;",  Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '!', &bexpr2 } } } },
     };
 
     for (auto& tc : test_cases)
@@ -308,23 +303,22 @@ TEST(ParserTestSuite, Parse_Boolean_Expression)
 // TODO(HS): ^above for strings too
 TEST(ParserTestSuite, Parse_Prefix_Expression)
 {
-    union Number
-    {
-        int32_t ival;
-        float fval;
-    };
-
     struct Test_Case
     {
         const char *input;
-        char op;
-        Expression_Kind expected_kind;
-        Number expected_value;
+        Expression expected;
     };
 
+    Expression expr1 = Expression{ AST_INT_EXPRESSION, { .int_expression = { 10 } } };
+    Expression expr2 = Expression{ AST_FLOAT_EXPRESSION, { .float_expression = { 3.1f } } };
+    Expression expr3 = Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { false } } };
+    Expression expr4 = Expression{ AST_BOOLEAN_EXPRESSION, { .boolean_expression = { true } } };
+
     std::vector<Test_Case> test_cases{
-        { "-10;",  '-', AST_INT_EXPRESSION,   { .ival = 10 }   },
-        { "-3.1;", '-', AST_FLOAT_EXPRESSION, { .fval = 3.1f } },
+        { "-10;",    Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '-', &expr1 } } } },
+        { "-3.1;",   Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '-', &expr2 } } } },
+        { "!false;", Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '!', &expr3 } } } },
+        { "!true;",  Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '!', &expr4 } } } },
     };
 
     for (auto &tc : test_cases)
@@ -349,29 +343,7 @@ TEST(ParserTestSuite, Parse_Prefix_Expression)
 
         Expression expr = stmt.stmt.expression_statement.expression;
 
-        EXPECT_EQ(expr.kind, AST_PREFIX_EXPRESSION)
-            << "Expected kind " << ast_expression_kind_to_str(AST_PREFIX_EXPRESSION)
-            << ", got " << ast_expression_kind_to_str(expr.kind)
-            << "\n" << prog_str;
-
-        Prefix_Expression pexpr = expr.expr.prefix_expression;
-        
-        EXPECT_EQ(tc.op, pexpr.op) << prog_str;
-
-        EXPECT_EQ(pexpr.rhs->kind, tc.expected_kind)
-            << "Expected prefix expression operand to be either " 
-            << ast_expression_kind_to_str(tc.expected_kind)
-            << ", got " << ast_expression_kind_to_str(pexpr.rhs->kind)
-            << "\n" << prog_str;
-
-        if (pexpr.rhs->kind == AST_INT_EXPRESSION)
-        {
-            EXPECT_EQ(pexpr.rhs->expr.int_expression.value, tc.expected_value.ival) << prog_str;
-        }
-        else if (pexpr.rhs->kind == AST_FLOAT_EXPRESSION)
-        {
-            EXPECT_FLOAT_EQ(pexpr.rhs->expr.float_expression.value, tc.expected_value.fval) << prog_str;
-        }
+        test_expression(tc.expected, expr, prog_str);
 
         program_free(&program);
         free((void *) prog_str);
