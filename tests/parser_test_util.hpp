@@ -27,6 +27,9 @@ void test_int_expression(Expression exp, Expression act, const char *prog_str);
 /// Tests that 2 float_expressions match, prints AST if not
 void test_float_expression(Expression exp, Expression act, const char *prog_str);
 
+/// Tests that 2 boolean_expressions match, prints AST if not
+void test_boolean_expression(Expression exp, Expression act, const char *prog_str);
+
 /// Tests that 2 prefix_expressions match, prints AST if not
 void test_prefix_expression(Expression exp, Expression act, const char *prog_str);
 
@@ -44,11 +47,12 @@ void test_expression(Expression exp, Expression act, const char *prog_str)
 
     switch (exp.kind)
     {
-        case AST_IDENT_EXPRESSION:  { test_ident_expression(exp, act, prog_str); } break;
-        case AST_INT_EXPRESSION:    { test_int_expression(exp, act, prog_str); } break;
-        case AST_FLOAT_EXPRESSION:  { test_float_expression(exp, act, prog_str); } break;
-        case AST_PREFIX_EXPRESSION: { test_prefix_expression(exp, act, prog_str); } break;
-        case AST_INFIX_EXPRESSION:  { test_infix_expression(exp, act, prog_str); } break;
+        case AST_IDENT_EXPRESSION:   { test_ident_expression(exp, act, prog_str); } break;
+        case AST_INT_EXPRESSION:     { test_int_expression(exp, act, prog_str); } break;
+        case AST_FLOAT_EXPRESSION:   { test_float_expression(exp, act, prog_str); } break;
+        case AST_BOOLEAN_EXPRESSION: { test_boolean_expression(exp, act, prog_str); } break;
+        case AST_PREFIX_EXPRESSION:  { test_prefix_expression(exp, act, prog_str); } break;
+        case AST_INFIX_EXPRESSION:   { test_infix_expression(exp, act, prog_str); } break;
     }
 }
 
@@ -82,6 +86,17 @@ void test_float_expression(Expression exp, Expression act, const char *prog_str)
         << "\n" << prog_str;
 
     EXPECT_FLOAT_EQ(exp.expr.int_expression.value, act.expr.int_expression.value);
+}
+
+void test_boolean_expression(Expression exp, Expression act, const char *prog_str)
+{
+    EXPECT_EQ(exp.kind, act.kind) 
+        << "Expected expression kind " << ast_expression_kind_to_str(exp.kind)
+        << ", got " << ast_expression_kind_to_str(act.kind)
+        << "\n" << prog_str;
+
+    EXPECT_FLOAT_EQ(exp.expr.boolean_expression.value, act.expr.boolean_expression.value)
+        << prog_str;
 }
 
 void test_prefix_expression(Expression exp, Expression act, const char *prog_str)
