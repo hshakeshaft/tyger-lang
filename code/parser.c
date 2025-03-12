@@ -458,8 +458,6 @@ Prefix_Expression parse_prefix_expression(Parser *p)
     return expr;
 }
 
-// NOTE(HS): possibly need to do the precidence fix here
-// void parse_infix_expression(Parser *p, Infix_Expression *ie)
 Expression parse_infix_expression(Parser *p, Expression *lhs)
 {
     Expression expr = {
