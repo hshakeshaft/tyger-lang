@@ -282,8 +282,11 @@ Statement parse_var_statement(Parser *p)
         return stmt;
     }
 
-    // TODO(HS): handle properly when expressions are parsed
-    while (!cur_token_is(p, TK_SEMICOLON))
+    parser_next_token(p);
+
+    stmt.stmt.var_statement.expression = parse_expression(p, LOWEST);
+
+    if (peek_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
     }

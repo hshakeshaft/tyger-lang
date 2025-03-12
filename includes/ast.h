@@ -86,7 +86,7 @@ typedef struct
 typedef struct
 {
     const char *ident;
-    // TODO(HS): add expression
+    Expression expression;
 } Var_Statement;
 
 typedef struct

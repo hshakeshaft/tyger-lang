@@ -9,6 +9,9 @@
 #include "ast.h"
 #include "trace.h"
 
+#define PARSER_TEST_UTIL_IMPL
+#include "parser_test_util.hpp"
+
 // TODO(HS): add parser error checking
 
 TEST(ParserTestSuite, Parse_Var_Statement)
@@ -16,15 +19,28 @@ TEST(ParserTestSuite, Parse_Var_Statement)
     struct Test_Case 
     { 
         const char *input;
-        Statement_Kind expected_kind;
         const char *expected_ident;
+        Expression expected;
     };
 
+    Expression lhs1{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
+    Expression rhs1_lhs{ AST_INT_EXPRESSION, { .int_expression = { 4 } } };
+    Expression rhs1_rhs{ AST_INT_EXPRESSION, { .int_expression = { 3 } } };
+    Expression rhs1{ AST_INFIX_EXPRESSION, { .infix_expression = { TK_ASTERISK, &rhs1_lhs, &rhs1_rhs} } };
+
+    Expression rhs2{ AST_INT_EXPRESSION, { .int_expression = { 5 } } };
+
     std::vector<Test_Case> test_cases{
-        { "var x = 10;",       AST_VAR_STATEMENT, "x" },
-        { "var y = 10;",       AST_VAR_STATEMENT, "y" },
-        { "var fooBar = 10;",  AST_VAR_STATEMENT, "fooBar" },
-        { "var PI = 3.14159;", AST_VAR_STATEMENT, "PI" },
+        { "var x = 10;", "x", Expression{ AST_INT_EXPRESSION, { .int_expression = { 10 } } } },
+        { "var fooBar = 10;", "fooBar", Expression{ AST_INT_EXPRESSION, { .int_expression = { 10 } } } },
+
+        { "var PI = 3.14159;", "PI", Expression{ AST_FLOAT_EXPRESSION, { .float_expression = { 3.14159f } } } },
+
+        { "var y = -5;", "y", Expression{ AST_PREFIX_EXPRESSION, { .prefix_expression = { '-', &rhs2 } } } },
+
+        { "var a = b;", "a", Expression{ AST_IDENT_EXPRESSION, { .ident_expression = { "b" } }} },
+
+        { "var x = 5 + 4 * 3;", "x", Expression{ AST_INFIX_EXPRESSION, { .infix_expression { TK_PLUS, &lhs1, &rhs1 } } } },
     };
 
     for (auto& tc : test_cases)
@@ -50,6 +66,9 @@ TEST(ParserTestSuite, Parse_Var_Statement)
         std::string expected_ident{tc.expected_ident};
         std::string actual_ident{stmt.stmt.var_statement.ident};
         EXPECT_EQ(expected_ident, actual_ident) << prog_str;
+
+        Expression expr = stmt.stmt.var_statement.expression;
+        test_expression(tc.expected, expr, prog_str);
 
         program_free(&program);
         free((void *) prog_str);
