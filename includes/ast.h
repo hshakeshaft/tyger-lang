@@ -17,7 +17,8 @@
     X(FLOAT_EXPRESSION)          \
     X(BOOLEAN_EXPRESSION)        \
     X(PREFIX_EXPRESSION)         \
-    X(INFIX_EXPRESSION)
+    X(INFIX_EXPRESSION)          \
+    X(IF_EXPRESSION)
 
 typedef enum
 {
@@ -69,6 +70,15 @@ typedef struct
     Expression *rhs;
 } Infix_Expression;
 
+typedef struct block_statement_s Block_Statement;
+
+typedef struct
+{
+    Expression *condition;
+    Block_Statement *consequence;
+    Block_Statement *alternative;
+} If_Expression;
+
 typedef union
 {
     Ident_Expression ident_expression;
@@ -77,6 +87,7 @@ typedef union
     Boolean_Expression boolean_expression;
     Prefix_Expression prefix_expression;
     Infix_Expression infix_expression;
+    If_Expression if_expression;
 } uExpression;
 
 struct expression_s
@@ -122,6 +133,12 @@ typedef struct
     uStatement stmt;
 } Statement;
 
+struct block_statement_s
+{
+    size_t len;
+    size_t capacity;
+    Statement *statements;
+};
 
 #if defined(__cplusplus)
 extern "C" {

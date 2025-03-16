@@ -496,3 +496,151 @@ TEST(ParserTestSuite, Parse_Operator_Precidence)
         free((void *) prog_yml);
     }
 }
+
+TEST(ParserTestSuite, Parse_If_Expressions)
+{
+    const char *input = "if (x < y) { 5 }";
+
+    Expression lhs1{ AST_IDENT_EXPRESSION, { .ident_expression = { "x" } } };
+    Expression rhs1{ AST_IDENT_EXPRESSION, { .ident_expression = { "y" } }};
+
+    Expression condition1{
+        AST_INFIX_EXPRESSION,
+        { .infix_expression = {
+            TK_LT,
+            &lhs1,
+            &rhs1
+        } }
+    };
+    Statement consequence1_stmts[] = {
+        Statement{
+            AST_EXPRESSION_STATEMENT,
+            { .expression_statement = {
+                Expression{
+                    AST_INT_EXPRESSION,
+                    { .int_expression = { 5 } }
+                }
+            } }
+        }
+    };
+    Block_Statement consequence1{ 1, 64, consequence1_stmts };
+    Expression exp{
+        AST_IF_EXPRESSION,
+        { .if_expression = {
+            &condition1,
+            &consequence1,
+            NULL
+        } }
+    };
+
+    Lexer l;
+    Parser p;
+
+    lexer_init(&l, input);
+    parser_init(&p, &l);
+
+    Program program = parser_parse_program(&p);
+    const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
+
+    EXPECT_EQ(program.len, 1) << prog_str;
+
+    Statement stmt = program.statements[0];
+    EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
+        << "Expected statement of kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+        << ", got " << ast_statement_kind_to_str(stmt.kind)
+        << "\n" << prog_str;
+
+    Expression expr = stmt.stmt.expression_statement.expression;
+    EXPECT_EQ(expr.kind, AST_IF_EXPRESSION)
+        << "Expected expression of kind " << ast_expression_kind_to_str(AST_IF_EXPRESSION)
+        << ", got " << ast_expression_kind_to_str(expr.kind)
+        << "\n" << prog_str;
+    
+    test_expression(*exp.expr.if_expression.condition, *expr.expr.if_expression.condition, prog_str);
+
+    EXPECT_TRUE(expr.expr.if_expression.consequence != NULL) << "Expected Consequence to not be NUll, instead is NULL" ;
+    EXPECT_TRUE(expr.expr.if_expression.alternative == NULL) << "Expected Consequence to be NUll, instead is not NULL" ;
+
+    program_free(&program);
+    free((void *) prog_str);
+}
+
+TEST(ParserTestSuite, Parse_If_Else_Expressions)
+{
+    const char *input = "if (x < y) { 5 } else { 3 }";
+
+    Expression lhs1{ AST_IDENT_EXPRESSION, { .ident_expression = { "x" } } };
+    Expression rhs1{ AST_IDENT_EXPRESSION, { .ident_expression = { "y" } }};
+
+    Expression condition1{
+        AST_INFIX_EXPRESSION,
+        { .infix_expression = {
+            TK_LT,
+            &lhs1,
+            &rhs1
+        } }
+    };
+    Statement consequence1_stmts[] = {
+        Statement{
+            AST_EXPRESSION_STATEMENT,
+            { .expression_statement = {
+                Expression{
+                    AST_INT_EXPRESSION,
+                    { .int_expression = { 5 } }
+                }
+            } }
+        }
+    };
+    Block_Statement consequence1{ 1, 64, consequence1_stmts };
+    Statement alternative1_stmts[] = {
+        Statement{
+            AST_EXPRESSION_STATEMENT,
+            { .expression_statement = {
+                Expression{
+                    AST_INT_EXPRESSION,
+                    { .int_expression = { 3 } }
+                }
+            } }
+        }
+    };
+    Block_Statement alternative1{ 1, 64, alternative1_stmts };
+    Expression exp{
+        AST_IF_EXPRESSION,
+        { .if_expression = {
+            &condition1,
+            &consequence1,
+            &alternative1
+        } }
+    };
+
+    Lexer l;
+    Parser p;
+
+    lexer_init(&l, input);
+    parser_init(&p, &l);
+
+    Program program = parser_parse_program(&p);
+    const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
+
+    EXPECT_EQ(program.len, 1) << prog_str;
+
+    Statement stmt = program.statements[0];
+    EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT) 
+        << "Expected statement of kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+        << ", got " << ast_statement_kind_to_str(stmt.kind)
+        << "\n" << prog_str;
+
+    Expression expr = stmt.stmt.expression_statement.expression;
+    EXPECT_EQ(expr.kind, AST_IF_EXPRESSION)
+        << "Expected expression of kind " << ast_expression_kind_to_str(AST_IF_EXPRESSION)
+        << ", got " << ast_expression_kind_to_str(expr.kind)
+        << "\n" << prog_str;
+    
+    test_expression(*exp.expr.if_expression.condition, *expr.expr.if_expression.condition, prog_str);
+
+    EXPECT_TRUE(expr.expr.if_expression.consequence != NULL) << "Expected Consequence to not be NUll, instead is NULL" ;
+    EXPECT_TRUE(expr.expr.if_expression.alternative != NULL) << "Expected Consequence to be NUll, instead is not NULL" ;
+
+    program_free(&program);
+    free((void *) prog_str);
+}

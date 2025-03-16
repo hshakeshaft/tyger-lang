@@ -372,6 +372,12 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
             expr = parse_grouped_expression(p);
         } break;
 
+        case TK_IF:
+        {
+            expr.kind = AST_IF_EXPRESSION;
+            expr.expr.if_expression = parse_if_expression(p);
+        } break;
+
         default:
         {
             fprintf(stderr, "unhandled token kind for expression: %s\n", token_kind_to_string(p->cur_token.kind));
@@ -519,4 +525,92 @@ Expression parse_grouped_expression(Parser *p)
     parser_next_token(p);
 
     return expr;
+}
+
+If_Expression parse_if_expression(Parser *p)
+{
+    If_Expression expr = {
+        .consequence = NULL,
+        .alternative = NULL
+    };
+
+    if (!expect_peek(p, TK_LPAREN))
+    {
+        // TODO(HS): errors
+    }
+
+    parser_next_token(p);
+    Expression condition = parse_expression(p, LOWEST);
+    if (!expect_peek(p, TK_RPAREN))
+    {
+        // TODO(HS): errors
+    }
+
+    if (!expect_peek(p, TK_LBRACE))
+    {
+        // TODO(HS): errors
+    }
+
+    Block_Statement consequence = parse_block_statement(p);
+
+    expr.condition   = malloc(sizeof(Expression));
+    assert(expr.condition && "Failed to allocate IF expression condition");
+    memcpy(expr.condition, &condition, sizeof(Expression));
+
+    expr.consequence = malloc(sizeof(Block_Statement));
+    assert(expr.condition && "Failed to allocate IF expression consequence");
+    memcpy(expr.consequence, &consequence, sizeof(Block_Statement));
+
+    Block_Statement alternative;
+    if (peek_token_is(p, TK_ELSE))
+    {
+        parser_next_token(p);
+        if (!expect_peek(p, TK_LBRACE))
+        {
+            // TODO(HS): errors
+        }
+
+        alternative = parse_block_statement(p);
+
+        expr.alternative = malloc(sizeof(Block_Statement));
+        assert(expr.condition && "Failed to allocate IF expression alternative");
+        memcpy(expr.alternative, &alternative, sizeof(Block_Statement));
+    }
+
+    return expr;
+}
+
+Block_Statement parse_block_statement(Parser *p)
+{
+    Block_Statement block = {
+        .len = 0,
+        .capacity = 16,
+    };
+    block.statements = malloc(sizeof(Statement) * block.capacity);
+
+    parser_next_token(p);
+    while (!cur_token_is(p, TK_RBRACE) && !cur_token_is(p, TK_EOF))
+    {
+        Statement stmt = parse_statement(p);
+        block_add_statement(&block, &stmt);
+        parser_next_token(p);
+    }
+
+    return block;
+}
+
+void block_add_statement(Block_Statement *bs, const Statement *stmt)
+{
+    if (bs->len + 1 > bs->capacity)
+    {
+        size_t new_capacity = bs->capacity * 2;
+        Statement *new_stmts = realloc(bs->statements, sizeof(Statement) * new_capacity);
+        if (new_stmts != bs->statements)
+        {
+            bs->statements = new_stmts;
+        }
+        bs->capacity = new_capacity;
+    }
+    memcpy(&bs->statements[bs->len], stmt, sizeof(Statement));
+    bs->len += 1;
 }

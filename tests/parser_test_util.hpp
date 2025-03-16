@@ -53,6 +53,9 @@ void test_expression(Expression exp, Expression act, const char *prog_str)
         case AST_BOOLEAN_EXPRESSION: { test_boolean_expression(exp, act, prog_str); } break;
         case AST_PREFIX_EXPRESSION:  { test_prefix_expression(exp, act, prog_str); } break;
         case AST_INFIX_EXPRESSION:   { test_infix_expression(exp, act, prog_str); } break;
+
+        // TODO(HS): implement?
+        case AST_IF_EXPRESSION:      {} break;
     }
 }
 
