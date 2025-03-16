@@ -22,48 +22,47 @@
 
 const char *program_print_ast(const Program *prog, AST_Print_Format format)
 {
-    Print_Header_Fn     print_header;
-    Print_Statement_Fn  print_statement;
-
-    switch (format)
-    {
-        case PRINT_FORMAT_PLAIN:
-        { 
-            print_header     = &ast_print_header_plain;
-            print_statement  = &ast_print_statement_plain;
-        } break;
-
-        case PRINT_FORMAT_YAML:
-        {
-            print_header     = &ast_print_header_yaml;
-            print_statement  = &ast_print_statement_yaml;
-        } break;
-    }
-
     size_t buffer_len = 1024;
     size_t buffer_offset = 0;
     char *buffer = malloc(sizeof(char) * buffer_len);
     assert(buffer && "Failed to allocate space for AST string buffer");
 
     // write header
-    print_header(buffer, &buffer_len, &buffer_offset);
+    switch (format)
+    {
+        case PRINT_FORMAT_PLAIN:
+        {
+            ast_print_header_plain(buffer, &buffer_len, &buffer_offset);
+        } break;
+
+        case PRINT_FORMAT_YAML:
+        {
+            ast_print_header_yaml(buffer, &buffer_len, &buffer_offset);
+        } break;
+    }
 
     // write statements
     for (size_t i = 0; i < prog->len; ++i)
     {
         Statement *stmt = &prog->statements[i];
-        print_statement(stmt, buffer, &buffer_len, &buffer_offset);
-
-        // if PLAIN format and not final statement append newlind
-        if (format == PRINT_FORMAT_PLAIN)
+        switch (format)
         {
-            if (i + 1 < prog->len)
+            case PRINT_FORMAT_PLAIN:
             {
-                int bytes_to_write = snprintf(NULL, 0, "\n");
-                ast_print_resize_debug_buffer(buffer, &buffer_len, buffer_offset, bytes_to_write);
-                snprintf(&buffer[buffer_offset], bytes_to_write + 1, "\n");
-                buffer_offset += bytes_to_write;
-            }
+                ast_print_statement_plain(stmt, buffer, &buffer_len, &buffer_offset);
+                if (i + 1 < prog->len)
+                {
+                    int bytes_to_write = snprintf(NULL, 0, "\n");
+                    ast_print_resize_debug_buffer(buffer, &buffer_len, buffer_offset, bytes_to_write);
+                    snprintf(&buffer[buffer_offset], bytes_to_write + 1, "\n");
+                    buffer_offset += bytes_to_write;
+                }
+           } break;
+
+            case PRINT_FORMAT_YAML:
+            {
+                ast_print_statement_yaml(stmt, buffer, &buffer_len, &buffer_offset, 1);
+            } break;
         }
     }
 
@@ -329,6 +328,68 @@ void ast_print_expression_plain(
                 }
             }
         } break;
+
+        case AST_IF_EXPRESSION:
+        {
+            // (if ((<cond>) (<cons>) else (<alt>)))
+            #define PLAIN_IF_EXPRESSION_BEGIN "if ("
+            #define PLAIN_IF_EXPRESSION_ALTERNATIVE ""
+            #define PLAIN_IF_EXPRESSION_END ")"
+
+            const If_Expression *ie = &expr->expr.if_expression;
+
+            { // if
+                bytes_to_write = snprintf(NULL, 0, PLAIN_IF_EXPRESSION_BEGIN);
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, PLAIN_IF_EXPRESSION_BEGIN);
+                *buffer_offset += bytes_to_write;
+            }
+
+            { // condition
+                bytes_to_write = snprintf(NULL, 0, "(");
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "(");
+                *buffer_offset += bytes_to_write;
+ 
+                ast_print_expression_plain(ie->condition, buffer, buffer_len, buffer_offset);
+
+                bytes_to_write = snprintf(NULL, 0, ")");
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, ")");
+                *buffer_offset += bytes_to_write;
+            }
+
+            { // consequence
+                bytes_to_write = snprintf(NULL, 0, " ");
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, " ");
+                *buffer_offset += bytes_to_write;
+
+                const Block_Statement *bs = ie->consequence;
+                for (size_t i = 0; i < bs->len; ++i)
+                {
+                    const Statement *stmt = &bs->statements[i];
+                    ast_print_statement_plain(stmt, buffer, buffer_len, buffer_offset);
+                }
+            }
+
+            { // alternative
+                if (ie->alternative)
+                {
+                    bytes_to_write = snprintf(NULL, 0, " else ");
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, " else ");
+                    *buffer_offset += bytes_to_write;
+
+                    const Block_Statement *bs = ie->alternative;
+                    for (size_t i = 0; i < bs->len; ++i)
+                    {
+                        const Statement *stmt = &bs->statements[i];
+                        ast_print_statement_plain(stmt, buffer, buffer_len, buffer_offset);
+                    }
+               }
+            }
+        } break;
     }
 }
 
@@ -342,10 +403,9 @@ void ast_print_header_yaml(
     assert(buffer_len);
     assert(buffer_offset);
 
-    char *padding = malloc(sizeof(char) * AST_STATEMENTS_LIST_INDENT + 1);
+    char *padding = malloc(sizeof(char) * AST_STATEMENTS_LIST_INDENT);
     assert(padding && "Failed to allocate padding in YAML header");
     memset(padding, ' ', AST_STATEMENTS_LIST_INDENT);
-    padding[AST_STATEMENTS_LIST_INDENT] = '\0';
 
     #define YAML_HEADER_FMT "---\nprogram:\n%sstatements:\n"
     int bytes_to_write = snprintf(NULL, 0, YAML_HEADER_FMT, padding);
@@ -361,7 +421,8 @@ void ast_print_statement_yaml(
     const Statement *stmt,
     INOUT char *buffer,
     INOUT size_t *buffer_len,
-    INOUT size_t *buffer_offset
+    INOUT size_t *buffer_offset,
+    int indent_level
 )
 {
     assert(stmt);
@@ -371,32 +432,45 @@ void ast_print_statement_yaml(
 
     int bytes_to_write;
 
-    { // write the kind as list entry
-        char *padding = malloc(sizeof(char) * AST_STATEMENT_LIST_ENTRY_INDENT + 1);
-        assert(padding && "Failed to allocate indent padding for statement in list");
-        memset(padding, ' ', AST_STATEMENT_LIST_ENTRY_INDENT);
-        padding[AST_STATEMENT_LIST_ENTRY_INDENT] = '\0';
+    size_t padding_amount = (indent_level * AST_INDENT_SPACES_PER_LEVEL) + AST_STATEMENTS_LIST_INDENT;
+    char *padding = malloc(sizeof(char) * padding_amount);
+    memset(padding, ' ', padding_amount);
 
+    { // write the kind as list entry
         const char *kind_str = ast_statement_kind_to_str(stmt->kind);
 
-        #define STMT_FMT "%s- kind: %s\n"
-        bytes_to_write = snprintf(NULL, 0, STMT_FMT, padding, kind_str);
-        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
-        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, STMT_FMT, padding, kind_str);
-        *buffer_offset += bytes_to_write;
+        #define YAML_TOP_LEVEL_STMT_FMT "%s- kind: %s\n"
+        #define YAML_STMT_FMT "%skind: %s\n"
 
-        free(padding);
+        if (indent_level == 1)
+        {
+            bytes_to_write = snprintf(NULL, 0, YAML_TOP_LEVEL_STMT_FMT, padding, kind_str);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(
+                &buffer[*buffer_offset],
+                bytes_to_write + 1,
+                YAML_TOP_LEVEL_STMT_FMT,
+                padding,
+                kind_str
+            );
+            *buffer_offset += bytes_to_write;
+        }
+        else
+        {
+            bytes_to_write = snprintf(NULL, 0, YAML_STMT_FMT, padding, kind_str);
+            ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+            snprintf(
+                &buffer[*buffer_offset],
+                bytes_to_write + 1,
+                YAML_STMT_FMT,
+                padding,
+                kind_str
+            );
+            *buffer_offset += bytes_to_write;
+        }
     }
 
     { // write statement kind specific info to tree
-        int indent_level = 1;
-        size_t padding_amount = (AST_STATEMENT_LIST_ENTRY_INDENT + (indent_level * AST_INDENT_SPACES_PER_LEVEL));
-
-        char *padding = malloc(sizeof(char) * (padding_amount + 1));
-        assert(padding && "Failed to allocate indentation padding for statement data");
-        memset(padding, ' ', padding_amount);
-        padding[padding_amount] = '\0';
-    
         switch (stmt->kind)
         {
             case AST_VAR_STATEMENT:
@@ -445,9 +519,9 @@ void ast_print_statement_yaml(
                 assert(0 && "Unreachable case - unhandled statement kind");
             } break;
         }
-
-        free(padding);
     }
+
+    free(padding);
 }
 
 void ast_print_expression_yaml(
@@ -465,10 +539,9 @@ void ast_print_expression_yaml(
     assert(indent_level > 0);
 
     size_t num_spaces = AST_STATEMENT_LIST_ENTRY_INDENT + (indent_level * AST_INDENT_SPACES_PER_LEVEL);
-    char *padding = malloc(sizeof(char) * (num_spaces + 1));
+    char *padding = malloc(sizeof(char) * num_spaces);
     assert(padding && "Failed to allocate padding for expression indent");
     memset(padding, ' ', num_spaces);
-    padding[num_spaces] = '\0';
 
     int bytes_to_write;
 
@@ -581,6 +654,46 @@ void ast_print_expression_yaml(
 
                     const Expression *rhs = inexpr->rhs;
                     ast_print_expression_yaml(rhs, buffer, buffer_len, buffer_offset, indent_level + 1);
+                }
+            } break;
+
+            case AST_IF_EXPRESSION:
+            {
+                const If_Expression *ie = &expr->expr.if_expression;
+
+                { // condition
+                bytes_to_write = snprintf(NULL, 0, "%scondition:\n", padding);
+                ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%scondition:\n", padding);
+                *buffer_offset += bytes_to_write;
+                ast_print_expression_yaml(ie->condition, buffer, buffer_len, buffer_offset, indent_level + 1);
+                }
+
+                { // consequence
+                    bytes_to_write = snprintf(NULL, 0, "%sconsequence:\n", padding);
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%sconsequence:\n", padding);
+                    *buffer_offset += bytes_to_write;
+                    for (size_t i = 0; i < ie->consequence->len; ++i)
+                    {
+                        const Statement *stmt = &ie->consequence->statements[i];
+                        ast_print_statement_yaml(stmt, buffer, buffer_len, buffer_offset, indent_level + 1);
+                    }
+                }
+
+                { // alternative
+                    if (ie->alternative)
+                    {
+                        bytes_to_write = snprintf(NULL, 0, "%salternative:\n", padding);
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%salternative:\n", padding);
+                        *buffer_offset += bytes_to_write;
+                        for (size_t i = 0; i < ie->consequence->len; ++i)
+                        {
+                            const Statement *stmt = &ie->consequence->statements[i];
+                            ast_print_statement_yaml(stmt, buffer, buffer_len, buffer_offset, indent_level + 1);
+                        }
+                    }
                 }
             } break;
         }

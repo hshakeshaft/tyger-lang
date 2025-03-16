@@ -86,6 +86,10 @@ TEST(TracePlainTestSuite, Test_Trace_Expression_Statement)
 
         { "false;", "(false)" },
         { "!true;", "((!true))" },
+
+        { "if (x < y) { x } else { y };", "(if ((x < y) (x) else (y))" },
+        { "if (x < y) { 5 } else { 3 };", "(if ((x < y) (5) else (3))" },
+        { "if (x < y) { x };",            "(if ((x < y) (x))" },
     };
 
     for (auto& tc : test_cases)

@@ -44,7 +44,8 @@ void ast_print_statement_yaml(
     const Statement *stmt,
     INOUT char *buffer,
     INOUT size_t *buffer_len,
-    INOUT size_t *buffer_offset
+    INOUT size_t *buffer_offset,
+    int indent_level
 );
 void ast_print_expression_yaml(
     const Expression *expr,
