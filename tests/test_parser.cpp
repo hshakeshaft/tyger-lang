@@ -75,6 +75,7 @@ TEST(ParserTestSuite, Parse_Var_Statement)
     }
 }
 
+// TODO(HS): actually test return statement
 TEST(ParserTestSuite, Parse_Return_Statements)
 {
     struct Test_Case 
@@ -85,8 +86,8 @@ TEST(ParserTestSuite, Parse_Return_Statements)
     std::vector<Test_Case> test_cases{
         { "return 10;"    },
         { "return false;" },
-        { "return;"       },
         { "return x;"     },
+        { "return;"       },
     };
 
     for (auto& tc : test_cases)
@@ -643,4 +644,79 @@ TEST(ParserTestSuite, Parse_If_Else_Expressions)
 
     program_free(&program);
     free((void *) prog_str);
+}
+
+TEST(ParserTestSuite, Parse_Function_Literal)
+{
+    struct Test_Case
+    {
+        const char *input;
+        Expression expected;
+    };
+
+    Parameters func1_args{ 0, 0, NULL };
+    Block_Statement func1_block{ 0, 0, NULL };
+    Expression func1{
+        AST_FUNCTION_EXPRESSION,
+        { .function_expression = { func1_args, &func1_block } }
+    };
+
+    Ident_Expression idents[] = {
+        Ident_Expression{ "x" },
+        Ident_Expression{ "y" },
+    };
+    Parameters func2_args{ 2, 2, idents };
+    Block_Statement func2_block{ 1, 2, NULL };
+    Expression func2{
+        AST_FUNCTION_EXPRESSION,
+        { .function_expression = { func2_args, &func2_block } }
+    };
+
+    std::vector<Test_Case> test_cases{
+        { "func() {};", func1 },
+        { "func(x, y) { return x + y; }", func2 },
+    };
+
+    for (auto& tc : test_cases)
+    {
+        Lexer l;
+        Parser p;
+        lexer_init(&l, tc.input);
+        parser_init(&p, &l);
+
+        Program program = parser_parse_program(&p);
+        const char *prog_str = program_print_ast(&program, PRINT_FORMAT_YAML);
+
+        EXPECT_EQ(program.len, 1) << prog_str;
+
+        Statement stmt = program.statements[0];
+        EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT)
+            << "Expected statement kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
+            << ", got " << ast_statement_kind_to_str(stmt.kind)
+            << "\n" << prog_str;
+        
+        Expression expr = stmt.stmt.expression_statement.expression;
+        EXPECT_EQ(expr.kind, AST_FUNCTION_EXPRESSION)
+            << "Expected expression kind " << ast_expression_kind_to_str(AST_FUNCTION_EXPRESSION)
+            << ", got " << ast_expression_kind_to_str(expr.kind)
+            << "\n" << prog_str;
+
+        Function_Expression act_fexpr = expr.expr.function_expression;
+        Function_Expression exp_fexpr = tc.expected.expr.function_expression;
+
+        // test parameter lits match
+        EXPECT_EQ(act_fexpr.parameters.len, exp_fexpr.parameters.len) << prog_str;
+        for (size_t i = 0; i < act_fexpr.parameters.len; ++i)
+        {
+            const Expression act_ie = Expression{ AST_IDENT_EXPRESSION, { .ident_expression = act_fexpr.parameters.idents[i] } };
+            const Expression exp_ie = Expression{ AST_IDENT_EXPRESSION, { .ident_expression = exp_fexpr.parameters.idents[i] } };
+            test_ident_expression(exp_ie, act_ie, prog_str);
+        }
+
+        // test bodies match (not rigorous)
+        EXPECT_EQ(exp_fexpr.body->len, act_fexpr.body->len) << prog_str;
+
+        program_free(&program);
+        free((void *) prog_str);
+    }
 }

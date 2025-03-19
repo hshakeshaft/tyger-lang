@@ -294,17 +294,24 @@ Statement parse_var_statement(Parser *p)
     return stmt;
 }
 
+// TODO(HS): expression needs to be pointer
 Statement parse_return_statement(Parser *p)
 {
     Statement stmt;
-
     stmt.kind = AST_RETURN_STATEMENT;
+    
+    parser_next_token(p);
 
-    stmt.stmt.return_statement = (Return_Statement) {
-        .token = p->cur_token,
-    };
+    if (cur_token_is(p, TK_SEMICOLON))
+    {
+        parser_next_token(p);
+       return stmt;
+    }
 
-    while (!cur_token_is(p, TK_SEMICOLON))
+    stmt.stmt.return_statement.expression = parse_expression(p, LOWEST);
+
+    // TODO(HS): errors
+    if (peek_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
     }
@@ -376,6 +383,12 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         {
             expr.kind = AST_IF_EXPRESSION;
             expr.expr.if_expression = parse_if_expression(p);
+        } break;
+
+        case TK_FUNC:
+        {
+            expr.kind = AST_FUNCTION_EXPRESSION;
+            expr.expr.function_expression = parse_function(p);
         } break;
 
         default:
@@ -613,4 +626,88 @@ void block_add_statement(Block_Statement *bs, const Statement *stmt)
     }
     memcpy(&bs->statements[bs->len], stmt, sizeof(Statement));
     bs->len += 1;
+}
+
+Parameters parse_function_parameters(Parser *p)
+{
+    Parameters params = {
+        .len = 0,
+        .capacity = 4,
+        .idents = NULL
+    };
+
+    // if parameters to parse allocate space
+    if (peek_token_is(p, TK_RPAREN))
+    {
+        parser_next_token(p);
+        params.capacity = 0;
+        return params;
+    }
+
+    parser_next_token(p);
+    params.idents = malloc(sizeof(Ident_Expression) * params.capacity);
+
+    // parse first ident
+    Ident_Expression ie = parse_ident(p);
+    memcpy(params.idents, &ie, sizeof(Ident_Expression));
+    params.len += 1;
+
+    // parse remaining idents
+    while (peek_token_is(p, TK_COMMA))
+    {
+        parser_next_token(p);
+        parser_next_token(p);
+
+        if (params.len + 1 > params.capacity)
+        {
+            size_t new_capacity = params.capacity * 2;
+            Ident_Expression *new_idents = realloc(params.idents, sizeof(Ident_Expression) * new_capacity);
+            if (new_idents != params.idents)
+            {
+                params.idents = new_idents;
+            }
+            params.capacity = new_capacity;
+        }
+
+        ie = parse_ident(p);
+        memcpy(&params.idents[params.len], &ie, sizeof(Ident_Expression));
+        params.len += 1;
+    }
+
+    if (params.len < params.capacity)
+    {
+        Ident_Expression *new_idents = realloc(params.idents, sizeof(Ident_Expression) * params.len);
+        if (new_idents != params.idents)
+        {
+            params.idents = new_idents;
+        }
+        params.capacity = params.len;
+    }
+
+    // TODO(HS): handle errors
+    if (!expect_peek(p, TK_RPAREN))
+    {}
+
+    return params;
+}
+
+Function_Expression parse_function(Parser *p)
+{
+    Function_Expression fexpr;
+
+    // TODO(HS): errors
+    if (!expect_peek(p, TK_LPAREN))
+    {}
+
+    fexpr.parameters = parse_function_parameters(p);
+
+    // TODO(HS): errors
+    if (!expect_peek(p, TK_LBRACE))
+    {}
+
+    Block_Statement bs = parse_block_statement(p);
+    fexpr.body = malloc(sizeof(Block_Statement));
+    memcpy(fexpr.body, &bs, sizeof(Block_Statement));
+
+    return fexpr;
 }

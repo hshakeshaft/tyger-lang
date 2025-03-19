@@ -18,7 +18,8 @@
     X(BOOLEAN_EXPRESSION)        \
     X(PREFIX_EXPRESSION)         \
     X(INFIX_EXPRESSION)          \
-    X(IF_EXPRESSION)
+    X(IF_EXPRESSION)             \
+    X(FUNCTION_EXPRESSION)
 
 typedef enum
 {
@@ -79,6 +80,19 @@ typedef struct
     Block_Statement *alternative;
 } If_Expression;
 
+typedef struct
+{
+    size_t len;
+    size_t capacity;
+    Ident_Expression *idents;
+} Parameters;
+
+typedef struct
+{
+    Parameters parameters;
+    Block_Statement *body;
+} Function_Expression;
+
 typedef union
 {
     Ident_Expression ident_expression;
@@ -88,6 +102,7 @@ typedef union
     Prefix_Expression prefix_expression;
     Infix_Expression infix_expression;
     If_Expression if_expression;
+    Function_Expression function_expression;
 } uExpression;
 
 struct expression_s
@@ -110,8 +125,7 @@ typedef struct
 
 typedef struct
 {
-    Token token;
-    // TODO(HS): add expression
+    Expression expression;
 } Return_Statement;
 
 typedef struct

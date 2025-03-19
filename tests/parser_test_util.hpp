@@ -55,7 +55,8 @@ void test_expression(Expression exp, Expression act, const char *prog_str)
         case AST_INFIX_EXPRESSION:   { test_infix_expression(exp, act, prog_str); } break;
 
         // TODO(HS): implement?
-        case AST_IF_EXPRESSION:      {} break;
+        case AST_IF_EXPRESSION:       {} break;
+        case AST_FUNCTION_EXPRESSION: {} break;
     }
 }
 

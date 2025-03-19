@@ -51,5 +51,7 @@ Expression parse_infix_expression(Parser *p, Expression *lhs);
 Expression parse_grouped_expression(Parser *p);
 If_Expression parse_if_expression(Parser *p);
 Block_Statement parse_block_statement(Parser *p);
+Parameters parse_function_parameters(Parser *p);
+Function_Expression parse_function(Parser *p);
 
 #endif // TYGER_PARSER_INTERNAL_H_
