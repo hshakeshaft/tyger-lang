@@ -390,6 +390,9 @@ void ast_print_expression_plain(
                }
             }
         } break;
+
+        case AST_FUNCTION_EXPRESSION:
+        {} break;
     }
 }
 
@@ -499,7 +502,9 @@ void ast_print_statement_yaml(
                 ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
                 snprintf(&buffer[*buffer_offset], bytes_to_write + 1, EXPRESSION_FMT, padding);
                 *buffer_offset += bytes_to_write;
-                // TODO(HS): write expression
+
+                const Expression *expr = &stmt->stmt.return_statement.expression;
+                ast_print_expression_yaml(expr, buffer, buffer_len, buffer_offset, indent_level + 1);
             } break;
 
             case AST_EXPRESSION_STATEMENT:
@@ -694,6 +699,44 @@ void ast_print_expression_yaml(
                             ast_print_statement_yaml(stmt, buffer, buffer_len, buffer_offset, indent_level + 1);
                         }
                     }
+                }
+            } break;
+
+            case AST_FUNCTION_EXPRESSION:
+            {
+                const Function_Expression *fe = &expr->expr.function_expression;
+
+                { // parameter list
+                    bytes_to_write = snprintf(NULL, 0, "%sparameters:\n", padding);
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%sparameters:\n", padding);
+                    *buffer_offset += bytes_to_write;
+
+                    char *extra_padding = malloc(sizeof(char) * (AST_INDENT_SPACES_PER_LEVEL + 1));
+                    memset(extra_padding, ' ', AST_INDENT_SPACES_PER_LEVEL);
+                    extra_padding[AST_INDENT_SPACES_PER_LEVEL] = '\0';
+
+                    for (size_t i = 0; i < fe->parameters.len; ++i)
+                    {
+                        const Ident_Expression *ie = &fe->parameters.idents[i];
+                        bytes_to_write = snprintf(NULL, 0, "%s%s- %s\n", padding, extra_padding, ie->ident);
+                        ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                        snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%s%s- %s\n", padding, extra_padding, ie->ident);
+                        *buffer_offset += bytes_to_write;
+                    }
+                }
+
+                { // body
+                    bytes_to_write = snprintf(NULL, 0, "%sbody:\n", padding);
+                    ast_print_resize_debug_buffer(buffer, buffer_len, *buffer_offset, bytes_to_write);
+                    snprintf(&buffer[*buffer_offset], bytes_to_write + 1, "%sbody:\n", padding);
+                    *buffer_offset += bytes_to_write;
+
+                    for (size_t i = 0; i < fe->body->len; ++i)
+                    {
+                        const Statement *stmt = &fe->body->statements[i];
+                        ast_print_statement_yaml(stmt, buffer, buffer_len, buffer_offset, indent_level + 1);
+                    }                    
                 }
             } break;
         }
