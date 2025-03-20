@@ -121,7 +121,8 @@ void test_infix_expression(Expression exp, Expression act, const char *prog_str)
         << ", got " << token_kind_to_string(act_op)
         << "\n" << prog_str;
     
-    test_expression(*exp.expr.prefix_expression.rhs, *act.expr.prefix_expression.rhs, prog_str);
+    test_expression(*exp.expr.infix_expression.lhs, *act.expr.infix_expression.lhs, prog_str);
+    test_expression(*exp.expr.infix_expression.rhs, *act.expr.infix_expression.rhs, prog_str);
 }
 
 #endif
