@@ -42,15 +42,15 @@ const char *program_print_ast(const Program *prog, AST_Print_Format format)
     }
 
     // write statements
-    for (size_t i = 0; i < prog->len; ++i)
+    for (size_t i = 0; i < prog->statements.len; ++i)
     {
-        Statement *stmt = &prog->statements[i];
+        Statement *stmt = &prog->statements.elements[i];
         switch (format)
         {
             case PRINT_FORMAT_PLAIN:
             {
                 ast_print_statement_plain(stmt, buffer, &buffer_len, &buffer_offset);
-                if (i + 1 < prog->len)
+                if (i + 1 < prog->statements.len)
                 {
                     int bytes_to_write = snprintf(NULL, 0, "\n");
                     ast_print_resize_debug_buffer(buffer, &buffer_len, buffer_offset, bytes_to_write);
