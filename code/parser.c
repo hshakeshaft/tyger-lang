@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "containers.h"
 #include "ast.h"
 #include "parser.h"
 #include "parser_internal.h"
@@ -103,77 +104,24 @@ inline bool expect_peek(Parser *p, Token_Kind kind)
 
 Program parser_parse_program(Parser *p)
 {
-    Program prog;
-    program_init(&prog);
+    Program prog = {0};
+    // program_init(&prog);
+    da_init(Statement, &prog.statements);
 
     while (p->cur_token.kind != TK_EOF)
     {
         Statement stmt = parse_statement(p);
-        program_add_statement(&prog, &stmt);
+        // program_add_statement(&prog, &stmt);
+        da_append(Statement, &prog.statements, &stmt);
         parser_next_token(p);
     }
 
     return prog;
 }
 
-void program_init(Program *prog)
-{
-    #define CAPACITY 64
-    prog->statements = malloc(sizeof(Statement) * CAPACITY);
-    assert(prog->statements && "Failed to allocate space for program");
-    prog->capacity = CAPACITY;
-    prog->len = 0;
-}
-
-void program_add_statement(Program *prog, const Statement *stmt)
-{
-    if (prog->len + 1 >= prog->capacity)
-    {
-        size_t new_capacity = prog->capacity * 2;
-        Statement *new_stmnts = realloc(prog->statements, new_capacity);
-        if (new_stmnts != prog->statements)
-        {
-            prog->statements = new_stmnts;
-        }
-        prog->capacity = new_capacity;
-    }
-
-    memcpy(&prog->statements[prog->len], stmt, sizeof(Statement));
-
-    prog->len += 1;
-}
-
 void program_free(Program *prog)
 {
-    if (!prog)             { return; }
-    if (!prog->statements) { return; }
-
-    for (size_t i = 0; i < prog->len; ++i)
-    {
-        Statement *stmt = &prog->statements[i];
-        switch (stmt->kind)
-        {
-            // TODO(HS): free expressions
-            case AST_VAR_STATEMENT:
-            case AST_RETURN_STATEMENT:
-            {} break;
-
-            case AST_EXPRESSION_STATEMENT:
-            {
-                expression_free(&stmt->stmt.expression_statement.expression);
-            } break;
-
-            case AST_ILLGEAL_STATEMENT:
-            {
-                assert(0 && "Invalid statement kind");
-            } break;
-        }
-    }
-
-    free(prog->statements);
-    prog->statements = NULL;
-    prog->len = 0;
-    prog->capacity = 0;
+    da_free(&prog->statements);
 }
 
 // TODO(HS): stress test this & make sure it doesn't actually leak

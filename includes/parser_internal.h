@@ -28,9 +28,6 @@ bool expect_peek(Parser *p, Token_Kind kind);
 
 void parser_next_token(Parser *p);
 
-void program_init(Program *prog);
-void program_add_statement(Program *prog, const Statement *stmt);
-
 void block_add_statement(Block_Statement *bs, const Statement *stmt);
 
 Statement make_illegal(Parser *p);

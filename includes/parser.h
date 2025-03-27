@@ -17,11 +17,16 @@ typedef struct
     Token peek_token;
 } Parser;
 
-typedef struct 
+typedef struct
 {
     size_t capacity;
     size_t len;
-    Statement *statements;
+    Statement *elements;
+} Statement_Array;
+
+typedef struct 
+{
+    Statement_Array statements;
 } Program;
 
 #if defined(__cplusplus)
