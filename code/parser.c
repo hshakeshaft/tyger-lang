@@ -299,7 +299,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         case TK_INT_LIT:
         {
             expr.kind = AST_INT_EXPRESSION;
-            expr.expr.int_expression = parse_int(p);
+            parse_int(p, &expr);
         } break;
 
         case TK_FLOAT_LIT:
@@ -366,7 +366,7 @@ void parse_ident(Parser *p, Expression *ident_expr)
     ident_expr->expr.ident_expression.ident = buffer;
 }
 
-Int_Expression parse_int(Parser *p)
+void parse_int(Parser *p, Expression *int_expr)
 {
     // TODO(HS): handle integers which are too long string wise
     size_t slen = p->cur_token.literal.length;
@@ -379,10 +379,9 @@ Int_Expression parse_int(Parser *p)
     int val = atoi(buffer);
     free(buffer);
 
-    Int_Expression iexpr = {
+    int_expr->expr.int_expression = (Int_Expression) {
         .value = val
     };
-    return iexpr;
 }
 
 Float_Expression parse_float(Parser *p)
