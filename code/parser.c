@@ -308,18 +308,18 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
             parse_float(p, &expr);
         } break;
 
+        case TK_FALSE:
+        case TK_TRUE:
+        {
+            expr.kind = AST_BOOLEAN_EXPRESSION;
+            parse_boolean(p, &expr);
+        } break;
+
         case TK_MINUS:
         case TK_BANG:
         {
             expr.kind = AST_PREFIX_EXPRESSION;
             expr.expr.prefix_expression = parse_prefix_expression(p);
-        } break;
-
-        case TK_FALSE:
-        case TK_TRUE:
-        {
-            expr.kind = AST_BOOLEAN_EXPRESSION;
-            expr.expr.boolean_expression = parse_boolean(p);
         } break;
 
         case TK_LPAREN:
@@ -402,12 +402,11 @@ void parse_float(Parser *p, Expression *float_expr)
     };
 }
 
-Boolean_Expression parse_boolean(Parser *p)
+void parse_boolean(Parser *p, Expression *bool_expr)
 {
-    Boolean_Expression expr = {
+    bool_expr->expr.boolean_expression = (Boolean_Expression) {
         .value = p->cur_token.kind == TK_TRUE ? true : false
     };
-    return expr;
 }
 
 // TODO(HS): better allocation strategy for expressions
