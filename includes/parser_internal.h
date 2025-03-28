@@ -39,7 +39,7 @@ Statement parse_expression_statement(Parser *p);
 
 Expression parse_expression(Parser *p, Operator_Precidence precidence);
 
-Ident_Expression parse_ident(Parser *p);
+void parse_ident(Parser *p, Expression *ident_expr);
 Int_Expression parse_int(Parser *p);
 Float_Expression parse_float(Parser *p);
 Boolean_Expression parse_boolean(Parser *p);

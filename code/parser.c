@@ -293,7 +293,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         case TK_IDENT:
         {
             expr.kind = AST_IDENT_EXPRESSION;
-            expr.expr.ident_expression = parse_ident(p);
+            parse_ident(p, &expr);
         } break;
 
         case TK_INT_LIT:
@@ -357,18 +357,13 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
 
 // TODO(HS): better mem allocs
 // TODO(HS): free ident
-Ident_Expression parse_ident(Parser *p)
+void parse_ident(Parser *p, Expression *ident_expr)
 {
     size_t slen = p->cur_token.literal.length;
     char *buffer = malloc(sizeof(char) * (slen + 1));
     strncpy(buffer, p->cur_token.literal.str, slen);
-    buffer[p->cur_token.literal.length] = '\0';
-
-    Ident_Expression expr = {
-        .ident = buffer
-    };
-
-    return expr;
+    buffer[slen] = '\0';
+    ident_expr->expr.ident_expression.ident = buffer;
 }
 
 Int_Expression parse_int(Parser *p)
@@ -596,8 +591,9 @@ Parameters parse_function_parameters(Parser *p)
     params.idents = malloc(sizeof(Ident_Expression) * params.capacity);
 
     // parse first ident
-    Ident_Expression ie = parse_ident(p);
-    memcpy(params.idents, &ie, sizeof(Ident_Expression));
+    Expression ident_expr;
+    parse_ident(p, &ident_expr);
+    memcpy(params.idents, &ident_expr.expr.ident_expression, sizeof(Ident_Expression));
     params.len += 1;
 
     // parse remaining idents
@@ -617,8 +613,8 @@ Parameters parse_function_parameters(Parser *p)
             params.capacity = new_capacity;
         }
 
-        ie = parse_ident(p);
-        memcpy(&params.idents[params.len], &ie, sizeof(Ident_Expression));
+        parse_ident(p, &ident_expr);
+        memcpy(&params.idents[params.len], &ident_expr.expr.ident_expression, sizeof(Ident_Expression));
         params.len += 1;
     }
 
