@@ -330,7 +330,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         case TK_IF:
         {
             expr.kind = AST_IF_EXPRESSION;
-            expr.expr.if_expression = parse_if_expression(p);
+            parse_if_expression(p, &expr);
         } break;
 
         case TK_FUNC:
@@ -477,9 +477,10 @@ Expression parse_grouped_expression(Parser *p)
     return expr;
 }
 
-If_Expression parse_if_expression(Parser *p)
+void parse_if_expression(Parser *p, Expression *if_expr)
 {
-    If_Expression expr = {
+    if_expr->expr.if_expression = (If_Expression) {
+        .condition = NULL,
         .consequence = NULL,
         .alternative = NULL
     };
@@ -503,13 +504,13 @@ If_Expression parse_if_expression(Parser *p)
 
     Block_Statement consequence = parse_block_statement(p);
 
-    expr.condition   = malloc(sizeof(Expression));
-    assert(expr.condition && "Failed to allocate IF expression condition");
-    memcpy(expr.condition, &condition, sizeof(Expression));
+    if_expr->expr.if_expression.condition = malloc(sizeof(Expression));
+    assert(if_expr->expr.if_expression.condition && "Failed to allocate IF expression condition");
+    memcpy(if_expr->expr.if_expression.condition, &condition, sizeof(Expression));
 
-    expr.consequence = malloc(sizeof(Block_Statement));
-    assert(expr.condition && "Failed to allocate IF expression consequence");
-    memcpy(expr.consequence, &consequence, sizeof(Block_Statement));
+    if_expr->expr.if_expression.consequence = malloc(sizeof(Block_Statement));
+    assert(if_expr->expr.if_expression.condition && "Failed to allocate IF expression consequence");
+    memcpy(if_expr->expr.if_expression.consequence, &consequence, sizeof(Block_Statement));
 
     Block_Statement alternative;
     if (peek_token_is(p, TK_ELSE))
@@ -522,12 +523,10 @@ If_Expression parse_if_expression(Parser *p)
 
         alternative = parse_block_statement(p);
 
-        expr.alternative = malloc(sizeof(Block_Statement));
-        assert(expr.condition && "Failed to allocate IF expression alternative");
-        memcpy(expr.alternative, &alternative, sizeof(Block_Statement));
+        if_expr->expr.if_expression.alternative = malloc(sizeof(Block_Statement));
+        assert(if_expr->expr.if_expression.condition && "Failed to allocate IF expression alternative");
+        memcpy(if_expr->expr.if_expression.alternative, &alternative, sizeof(Block_Statement));
     }
-
-    return expr;
 }
 
 Block_Statement parse_block_statement(Parser *p)
