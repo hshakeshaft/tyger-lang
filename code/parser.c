@@ -319,7 +319,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         case TK_BANG:
         {
             expr.kind = AST_PREFIX_EXPRESSION;
-            expr.expr.prefix_expression = parse_prefix_expression(p);
+            parse_prefix_expression(p, &expr);
         } break;
 
         case TK_LPAREN:
@@ -411,21 +411,20 @@ void parse_boolean(Parser *p, Expression *bool_expr)
 
 // TODO(HS): better allocation strategy for expressions
 // TODO(HS): parse prefix op for idents (& call expr?)
-Prefix_Expression parse_prefix_expression(Parser *p)
+void parse_prefix_expression(Parser *p, Expression *prefix_expr)
 {
     Token op = p->cur_token;
-    Prefix_Expression expr = {0};
 
     switch (op.kind)
     {
         case TK_MINUS:
         {
-            expr.op = '-';
+            prefix_expr->expr.prefix_expression.op = '-';
         } break;
 
         case TK_BANG:
         {
-            expr.op = '!';
+            prefix_expr->expr.prefix_expression.op = '!';
         } break;
 
         default:
@@ -437,11 +436,9 @@ Prefix_Expression parse_prefix_expression(Parser *p)
     parser_next_token(p);
     Expression rhs = parse_expression(p, PREFIX);
 
-    expr.rhs = malloc(sizeof(Expression));
-    assert(expr.rhs && "Failed to allocate memory for expression");
-    memcpy(expr.rhs, &rhs, sizeof(Expression));
-
-    return expr;
+    prefix_expr->expr.prefix_expression.rhs = malloc(sizeof(Expression));
+    assert(prefix_expr->expr.prefix_expression.rhs && "Failed to allocate memory for expression");
+    memcpy(prefix_expr->expr.prefix_expression.rhs, &rhs, sizeof(Expression));
 }
 
 Expression parse_infix_expression(Parser *p, Expression *lhs)
