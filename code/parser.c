@@ -324,7 +324,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
 
         case TK_LPAREN:
         {
-            expr = parse_grouped_expression(p);
+            parse_grouped_expression(p, &expr);
         } break;
 
         case TK_IF:
@@ -465,7 +465,7 @@ Expression parse_infix_expression(Parser *p, Expression *lhs)
     return expr;
 }
 
-Expression parse_grouped_expression(Parser *p)
+void parse_grouped_expression(Parser *p, Expression *grouped_expr)
 {
     parser_next_token(p);
     
@@ -474,7 +474,7 @@ Expression parse_grouped_expression(Parser *p)
     assert(peek_token_is(p, TK_RPAREN) && "Peeked token is not RParen");
     parser_next_token(p);
 
-    return expr;
+    memcpy(grouped_expr, &expr, sizeof(Expression));
 }
 
 void parse_if_expression(Parser *p, Expression *if_expr)
