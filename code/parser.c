@@ -336,7 +336,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         case TK_FUNC:
         {
             expr.kind = AST_FUNCTION_EXPRESSION;
-            expr.expr.function_expression = parse_function(p);
+            parse_function(p, &expr);
         } break;
 
         default:
@@ -628,23 +628,19 @@ Parameters parse_function_parameters(Parser *p)
     return params;
 }
 
-Function_Expression parse_function(Parser *p)
+void parse_function(Parser *p, Expression *func_expr)
 {
-    Function_Expression fexpr;
-
     // TODO(HS): errors
     if (!expect_peek(p, TK_LPAREN))
     {}
 
-    fexpr.parameters = parse_function_parameters(p);
+    func_expr->expr.function_expression.parameters = parse_function_parameters(p);
 
     // TODO(HS): errors
     if (!expect_peek(p, TK_LBRACE))
     {}
 
     Block_Statement bs = parse_block_statement(p);
-    fexpr.body = malloc(sizeof(Block_Statement));
-    memcpy(fexpr.body, &bs, sizeof(Block_Statement));
-
-    return fexpr;
+    func_expr->expr.function_expression.body = malloc(sizeof(Block_Statement));
+    memcpy(func_expr->expr.function_expression.body, &bs, sizeof(Block_Statement));
 }

@@ -49,6 +49,6 @@ Expression parse_grouped_expression(Parser *p);
 void parse_if_expression(Parser *p, Expression *if_expr);
 Block_Statement parse_block_statement(Parser *p);
 Parameters parse_function_parameters(Parser *p);
-Function_Expression parse_function(Parser *p);
+void parse_function(Parser *p, Expression *func_expr);
 
 #endif // TYGER_PARSER_INTERNAL_H_
