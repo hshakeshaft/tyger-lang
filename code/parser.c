@@ -305,9 +305,9 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
         case TK_FLOAT_LIT:
         {
             expr.kind = AST_FLOAT_EXPRESSION;
-            expr.expr.float_expression = parse_float(p);
+            parse_float(p, &expr);
         } break;
-        
+
         case TK_MINUS:
         case TK_BANG:
         {
@@ -384,7 +384,7 @@ void parse_int(Parser *p, Expression *int_expr)
     };
 }
 
-Float_Expression parse_float(Parser *p)
+void parse_float(Parser *p, Expression *float_expr)
 {
     // TODO(HS): handle integers which are too long string wise
     size_t slen = p->cur_token.literal.length;
@@ -397,10 +397,9 @@ Float_Expression parse_float(Parser *p)
     float val = (float) atof(buffer);
     free(buffer);
 
-    Float_Expression fexpr = {
+    float_expr->expr.float_expression = (Float_Expression) {
         .value = val
     };
-    return fexpr;
 }
 
 Boolean_Expression parse_boolean(Parser *p)
