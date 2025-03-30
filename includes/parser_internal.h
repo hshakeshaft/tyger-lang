@@ -44,7 +44,7 @@ void parse_int(Parser *p, Expression *int_expr);
 void parse_float(Parser *p, Expression *float_expr);
 void parse_boolean(Parser *p, Expression *bool_expr);
 void parse_prefix_expression(Parser *p, Expression *prefix_expr);
-Expression parse_infix_expression(Parser *p, Expression *lhs);
+void parse_infix_expression(Parser *p, Expression *expr);
 void parse_grouped_expression(Parser *p, Expression *grouped_expr);
 void parse_if_expression(Parser *p, Expression *if_expr);
 Block_Statement parse_block_statement(Parser *p);

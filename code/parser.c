@@ -349,7 +349,7 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
     while (!peek_token_is(p, TK_SEMICOLON) && (precidence < peek_precidence(p)))
     {
         parser_next_token(p);
-        expr = parse_infix_expression(p, &expr);
+        parse_infix_expression(p, &expr);
     }
 
     return expr;
@@ -441,28 +441,28 @@ void parse_prefix_expression(Parser *p, Expression *prefix_expr)
     memcpy(prefix_expr->expr.prefix_expression.rhs, &rhs, sizeof(Expression));
 }
 
-Expression parse_infix_expression(Parser *p, Expression *lhs)
+// TODO(HS): think I can do this without reallocation, if I create epression on
+// stack, then fill that struct out, then copy "new" expression into param
+void parse_infix_expression(Parser *p, Expression *expr)
 {
-    Expression expr = {
-        .kind = AST_INFIX_EXPRESSION,
-        .expr.infix_expression = {
-            .op = p->cur_token.kind
-        }
-    };
+    Expression *lhs = malloc(sizeof(Expression));
+    memcpy(lhs, expr, sizeof(Expression));
 
-    expr.expr.infix_expression.lhs = malloc(sizeof(Expression));
-    assert(expr.expr.infix_expression.lhs);
-    expr.expr.infix_expression.rhs = malloc(sizeof(Expression));
-    assert(expr.expr.infix_expression.rhs);
+    expr->kind = AST_INFIX_EXPRESSION;
+    expr->expr.infix_expression.op = p->cur_token.kind;
 
-    memcpy(expr.expr.infix_expression.lhs, lhs, sizeof(Expression));
+    expr->expr.infix_expression.lhs = malloc(sizeof(Expression));
+    assert(expr->expr.infix_expression.lhs);
+    memcpy(expr->expr.infix_expression.lhs, lhs, sizeof(Expression));
+    free(lhs);
 
     Operator_Precidence precidence = precidence_of(p->cur_token.kind);
     parser_next_token(p);
     Expression rhs = parse_expression(p, precidence);
-    memcpy(expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
 
-    return expr;
+    expr->expr.infix_expression.rhs = malloc(sizeof(Expression));
+    assert(expr->expr.infix_expression.rhs);
+    memcpy(expr->expr.infix_expression.rhs, &rhs, sizeof(Expression));
 }
 
 void parse_grouped_expression(Parser *p, Expression *grouped_expr)
