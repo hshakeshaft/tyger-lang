@@ -232,7 +232,7 @@ Statement parse_var_statement(Parser *p)
 
     parser_next_token(p);
 
-    stmt.stmt.var_statement.expression = parse_expression(p, LOWEST);
+    parse_expression(p, &stmt.stmt.var_statement.expression, LOWEST);
 
     if (peek_token_is(p, TK_SEMICOLON))
     {
@@ -256,7 +256,7 @@ Statement parse_return_statement(Parser *p)
        return stmt;
     }
 
-    stmt.stmt.return_statement.expression = parse_expression(p, LOWEST);
+    parse_expression(p, &stmt.stmt.return_statement.expression, LOWEST);
 
     // TODO(HS): errors
     if (peek_token_is(p, TK_SEMICOLON))
@@ -269,10 +269,12 @@ Statement parse_return_statement(Parser *p)
 
 Statement parse_expression_statement(Parser *p)
 {
+    Expression expr;
+    parse_expression(p, &expr, LOWEST);
     Statement stmt = {
         .kind = AST_EXPRESSION_STATEMENT,
         .stmt.expression_statement = (Expression_Statement) {
-            .expression = parse_expression(p, LOWEST)
+            .expression = expr
         }
     };
 
@@ -284,59 +286,57 @@ Statement parse_expression_statement(Parser *p)
     return stmt;
 }
 
-Expression parse_expression(Parser *p, Operator_Precidence precidence)
+void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence)
 {
-    Expression expr;
-
     switch (p->cur_token.kind)
     {
         case TK_IDENT:
         {
-            expr.kind = AST_IDENT_EXPRESSION;
-            parse_ident(p, &expr);
+            expr->kind = AST_IDENT_EXPRESSION;
+            parse_ident(p, expr);
         } break;
 
         case TK_INT_LIT:
         {
-            expr.kind = AST_INT_EXPRESSION;
-            parse_int(p, &expr);
+            expr->kind = AST_INT_EXPRESSION;
+            parse_int(p, expr);
         } break;
 
         case TK_FLOAT_LIT:
         {
-            expr.kind = AST_FLOAT_EXPRESSION;
-            parse_float(p, &expr);
+            expr->kind = AST_FLOAT_EXPRESSION;
+            parse_float(p, expr);
         } break;
 
         case TK_FALSE:
         case TK_TRUE:
         {
-            expr.kind = AST_BOOLEAN_EXPRESSION;
-            parse_boolean(p, &expr);
+            expr->kind = AST_BOOLEAN_EXPRESSION;
+            parse_boolean(p, expr);
         } break;
 
         case TK_MINUS:
         case TK_BANG:
         {
-            expr.kind = AST_PREFIX_EXPRESSION;
-            parse_prefix_expression(p, &expr);
+            expr->kind = AST_PREFIX_EXPRESSION;
+            parse_prefix_expression(p, expr);
         } break;
 
         case TK_LPAREN:
         {
-            parse_grouped_expression(p, &expr);
+            parse_grouped_expression(p, expr);
         } break;
 
         case TK_IF:
         {
-            expr.kind = AST_IF_EXPRESSION;
-            parse_if_expression(p, &expr);
+            expr->kind = AST_IF_EXPRESSION;
+            parse_if_expression(p, expr);
         } break;
 
         case TK_FUNC:
         {
-            expr.kind = AST_FUNCTION_EXPRESSION;
-            parse_function(p, &expr);
+            expr->kind = AST_FUNCTION_EXPRESSION;
+            parse_function(p, expr);
         } break;
 
         default:
@@ -349,10 +349,8 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
     while (!peek_token_is(p, TK_SEMICOLON) && (precidence < peek_precidence(p)))
     {
         parser_next_token(p);
-        parse_infix_expression(p, &expr);
+        parse_infix_expression(p, expr);
     }
-
-    return expr;
 }
 
 // TODO(HS): better mem allocs
@@ -434,7 +432,8 @@ void parse_prefix_expression(Parser *p, Expression *prefix_expr)
     }
 
     parser_next_token(p);
-    Expression rhs = parse_expression(p, PREFIX);
+    Expression rhs;
+    parse_expression(p, &rhs, PREFIX);
 
     prefix_expr->expr.prefix_expression.rhs = malloc(sizeof(Expression));
     assert(prefix_expr->expr.prefix_expression.rhs && "Failed to allocate memory for expression");
@@ -460,7 +459,8 @@ void parse_infix_expression(Parser *p, Expression *expr)
   
     Operator_Precidence precidence = precidence_of(p->cur_token.kind);
     parser_next_token(p);
-    Expression rhs = parse_expression(p, precidence);
+    Expression rhs;
+    parse_expression(p, &rhs, precidence);
 
     memcpy(infix_expr.expr.infix_expression.lhs, expr, sizeof(Expression));
     memcpy(infix_expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
@@ -471,7 +471,8 @@ void parse_grouped_expression(Parser *p, Expression *grouped_expr)
 {
     parser_next_token(p);
     
-    Expression expr = parse_expression(p, LOWEST);
+    Expression expr;
+    parse_expression(p, &expr, LOWEST);
 
     assert(peek_token_is(p, TK_RPAREN) && "Peeked token is not RParen");
     parser_next_token(p);
@@ -493,7 +494,8 @@ void parse_if_expression(Parser *p, Expression *if_expr)
     }
 
     parser_next_token(p);
-    Expression condition = parse_expression(p, LOWEST);
+    Expression condition;
+    parse_expression(p, &condition, LOWEST);
     if (!expect_peek(p, TK_RPAREN))
     {
         // TODO(HS): errors

@@ -37,7 +37,7 @@ Statement parse_var_statement(Parser *p);
 Statement parse_return_statement(Parser *p);
 Statement parse_expression_statement(Parser *p);
 
-Expression parse_expression(Parser *p, Operator_Precidence precidence);
+void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence);
 
 void parse_ident(Parser *p, Expression *ident_expr);
 void parse_int(Parser *p, Expression *int_expr);
