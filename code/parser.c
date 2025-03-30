@@ -441,28 +441,30 @@ void parse_prefix_expression(Parser *p, Expression *prefix_expr)
     memcpy(prefix_expr->expr.prefix_expression.rhs, &rhs, sizeof(Expression));
 }
 
-// TODO(HS): think I can do this without reallocation, if I create epression on
-// stack, then fill that struct out, then copy "new" expression into param
 void parse_infix_expression(Parser *p, Expression *expr)
 {
-    Expression *lhs = malloc(sizeof(Expression));
-    memcpy(lhs, expr, sizeof(Expression));
+    // NOTE(HS): we create this on the stack later, and later override the passed
+    // in expression with the value of this. Done this way to avoid extra allocations
+    // and potential errors thenceforth.
+    Expression infix_expr = {
+        .kind = AST_INFIX_EXPRESSION,
+        .expr.infix_expression = {
+            .op = p->cur_token.kind,
+        }
+    };
 
-    expr->kind = AST_INFIX_EXPRESSION;
-    expr->expr.infix_expression.op = p->cur_token.kind;
-
-    expr->expr.infix_expression.lhs = malloc(sizeof(Expression));
-    assert(expr->expr.infix_expression.lhs);
-    memcpy(expr->expr.infix_expression.lhs, lhs, sizeof(Expression));
-    free(lhs);
-
+    infix_expr.expr.infix_expression.lhs = malloc(sizeof(Expression));
+    assert(infix_expr.expr.infix_expression.lhs);
+    infix_expr.expr.infix_expression.rhs = malloc(sizeof(Expression));
+    assert(infix_expr.expr.infix_expression.rhs);
+  
     Operator_Precidence precidence = precidence_of(p->cur_token.kind);
     parser_next_token(p);
     Expression rhs = parse_expression(p, precidence);
 
-    expr->expr.infix_expression.rhs = malloc(sizeof(Expression));
-    assert(expr->expr.infix_expression.rhs);
-    memcpy(expr->expr.infix_expression.rhs, &rhs, sizeof(Expression));
+    memcpy(infix_expr.expr.infix_expression.lhs, expr, sizeof(Expression));
+    memcpy(infix_expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
+    memcpy(expr, &infix_expr, sizeof(Expression));
 }
 
 void parse_grouped_expression(Parser *p, Expression *grouped_expr)
