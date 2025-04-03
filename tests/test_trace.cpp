@@ -38,9 +38,9 @@ TEST(TracePlainTestSuite, Test_Trace_Var_Statement)
         const char *prog_str = program_print_ast(&program, PRINT_FORMAT_PLAIN);
         const char *prog_yml = program_print_ast(&program, PRINT_FORMAT_YAML);
 
-        EXPECT_EQ(program.len, 1) << prog_str << "\n" << prog_yml;
+        EXPECT_EQ(program.statements.len, 1) << prog_str << "\n" << prog_yml;
 
-        Statement stmt = program.statements[0];
+        Statement stmt = program.statements.elements[0];
         EXPECT_EQ(stmt.kind, AST_VAR_STATEMENT)
             << "Expected statement kind " << ast_statement_kind_to_str(AST_VAR_STATEMENT)
             << ", got " << ast_statement_kind_to_str(stmt.kind)
@@ -104,9 +104,9 @@ TEST(TracePlainTestSuite, Test_Trace_Expression_Statement)
         const char *prog_str = program_print_ast(&program, PRINT_FORMAT_PLAIN);
         const char *prog_yml = program_print_ast(&program, PRINT_FORMAT_YAML);
 
-        EXPECT_EQ(program.len, 1) << prog_str << "\n" << prog_yml;
+        EXPECT_EQ(program.statements.len, 1) << prog_str << "\n" << prog_yml;
 
-        Statement stmt = program.statements[0];
+        Statement stmt = program.statements.elements[0];
         EXPECT_EQ(stmt.kind, AST_EXPRESSION_STATEMENT)
             << "Expected statement kind " << ast_statement_kind_to_str(AST_EXPRESSION_STATEMENT)
             << ", got " << ast_statement_kind_to_str(stmt.kind)
