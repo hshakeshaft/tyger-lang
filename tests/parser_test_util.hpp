@@ -42,7 +42,7 @@ void test_expression(Expression exp, Expression act, const char *prog_str)
 {
     EXPECT_EQ(exp.kind, act.kind)
         << "Expected expression of kind " << ast_expression_kind_to_str(exp.kind)
-        << ", got" << ast_expression_kind_to_str(act.kind)
+        << ", got " << ast_expression_kind_to_str(act.kind)
         << "\n" << prog_str;
 
     switch (exp.kind)

@@ -62,7 +62,7 @@ TEST(ParserTestSuite, Parse_Var_Statement)
             << "Expected kind " << ast_statement_kind_to_str(AST_VAR_STATEMENT)
             << ", got " << ast_statement_kind_to_str(stmt.kind)
             << "\n" << prog_str;
-        
+
         std::string expected_ident{tc.expected_ident};
         std::string actual_ident{stmt.stmt.var_statement.ident};
         EXPECT_EQ(expected_ident, actual_ident) << prog_str;
@@ -397,7 +397,7 @@ TEST(ParserTestSuite, Parse_Binary_Expression)
             << "Expected kind " << ast_expression_kind_to_str(AST_INFIX_EXPRESSION)
             << ", got " << ast_expression_kind_to_str(expr.kind)
             << "\n" << prog_str;
-        
+
         Infix_Expression inexpr = expr.expr.infix_expression;
 
         // test operator
@@ -408,17 +408,11 @@ TEST(ParserTestSuite, Parse_Binary_Expression)
 
         // test LHS
         Expression *lhs = inexpr.lhs;
-        EXPECT_EQ(lhs->kind, tc.lhs.kind)
-            << "Expected kind " << ast_expression_kind_to_str(tc.lhs.kind)
-            << ", got " << ast_expression_kind_to_str(lhs->kind)
-            << "\n" << prog_str;
+        test_expression(tc.lhs, *lhs, prog_str);
 
         // test RHS
         Expression *rhs = inexpr.rhs;
-        EXPECT_EQ(rhs->kind, tc.rhs.kind)
-            << "Expected kind " << ast_expression_kind_to_str(tc.rhs.kind)
-            << ", got " << ast_expression_kind_to_str(rhs->kind)
-            << "\n" << prog_str;
+        test_expression(tc.rhs, *rhs, prog_str);
 
         program_free(&program);
         free((void *) prog_str);

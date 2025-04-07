@@ -232,7 +232,7 @@ Statement parse_var_statement(Parser *p)
 
     parser_next_token(p);
 
-    stmt.stmt.var_statement.expression = parse_expression(p, LOWEST);
+    parse_expression(p, &stmt.stmt.var_statement.expression, LOWEST);
 
     if (peek_token_is(p, TK_SEMICOLON))
     {
@@ -256,7 +256,7 @@ Statement parse_return_statement(Parser *p)
        return stmt;
     }
 
-    stmt.stmt.return_statement.expression = parse_expression(p, LOWEST);
+    parse_expression(p, &stmt.stmt.return_statement.expression, LOWEST);
 
     // TODO(HS): errors
     if (peek_token_is(p, TK_SEMICOLON))
@@ -269,10 +269,12 @@ Statement parse_return_statement(Parser *p)
 
 Statement parse_expression_statement(Parser *p)
 {
+    Expression expr;
+    parse_expression(p, &expr, LOWEST);
     Statement stmt = {
         .kind = AST_EXPRESSION_STATEMENT,
         .stmt.expression_statement = (Expression_Statement) {
-            .expression = parse_expression(p, LOWEST)
+            .expression = expr
         }
     };
 
@@ -284,59 +286,57 @@ Statement parse_expression_statement(Parser *p)
     return stmt;
 }
 
-Expression parse_expression(Parser *p, Operator_Precidence precidence)
+void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence)
 {
-    Expression expr;
-
     switch (p->cur_token.kind)
     {
         case TK_IDENT:
         {
-            expr.kind = AST_IDENT_EXPRESSION;
-            expr.expr.ident_expression = parse_ident(p);
+            expr->kind = AST_IDENT_EXPRESSION;
+            parse_ident(p, expr);
         } break;
 
         case TK_INT_LIT:
         {
-            expr.kind = AST_INT_EXPRESSION;
-            expr.expr.int_expression = parse_int(p);
+            expr->kind = AST_INT_EXPRESSION;
+            parse_int(p, expr);
         } break;
 
         case TK_FLOAT_LIT:
         {
-            expr.kind = AST_FLOAT_EXPRESSION;
-            expr.expr.float_expression = parse_float(p);
-        } break;
-        
-        case TK_MINUS:
-        case TK_BANG:
-        {
-            expr.kind = AST_PREFIX_EXPRESSION;
-            expr.expr.prefix_expression = parse_prefix_expression(p);
+            expr->kind = AST_FLOAT_EXPRESSION;
+            parse_float(p, expr);
         } break;
 
         case TK_FALSE:
         case TK_TRUE:
         {
-            expr.kind = AST_BOOLEAN_EXPRESSION;
-            expr.expr.boolean_expression = parse_boolean(p);
+            expr->kind = AST_BOOLEAN_EXPRESSION;
+            parse_boolean(p, expr);
+        } break;
+
+        case TK_MINUS:
+        case TK_BANG:
+        {
+            expr->kind = AST_PREFIX_EXPRESSION;
+            parse_prefix_expression(p, expr);
         } break;
 
         case TK_LPAREN:
         {
-            expr = parse_grouped_expression(p);
+            parse_grouped_expression(p, expr);
         } break;
 
         case TK_IF:
         {
-            expr.kind = AST_IF_EXPRESSION;
-            expr.expr.if_expression = parse_if_expression(p);
+            expr->kind = AST_IF_EXPRESSION;
+            parse_if_expression(p, expr);
         } break;
 
         case TK_FUNC:
         {
-            expr.kind = AST_FUNCTION_EXPRESSION;
-            expr.expr.function_expression = parse_function(p);
+            expr->kind = AST_FUNCTION_EXPRESSION;
+            parse_function(p, expr);
         } break;
 
         default:
@@ -349,29 +349,22 @@ Expression parse_expression(Parser *p, Operator_Precidence precidence)
     while (!peek_token_is(p, TK_SEMICOLON) && (precidence < peek_precidence(p)))
     {
         parser_next_token(p);
-        expr = parse_infix_expression(p, &expr);
+        parse_infix_expression(p, expr);
     }
-
-    return expr;
 }
 
 // TODO(HS): better mem allocs
 // TODO(HS): free ident
-Ident_Expression parse_ident(Parser *p)
+void parse_ident(Parser *p, Expression *ident_expr)
 {
     size_t slen = p->cur_token.literal.length;
     char *buffer = malloc(sizeof(char) * (slen + 1));
     strncpy(buffer, p->cur_token.literal.str, slen);
-    buffer[p->cur_token.literal.length] = '\0';
-
-    Ident_Expression expr = {
-        .ident = buffer
-    };
-
-    return expr;
+    buffer[slen] = '\0';
+    ident_expr->expr.ident_expression.ident = buffer;
 }
 
-Int_Expression parse_int(Parser *p)
+void parse_int(Parser *p, Expression *int_expr)
 {
     // TODO(HS): handle integers which are too long string wise
     size_t slen = p->cur_token.literal.length;
@@ -384,13 +377,12 @@ Int_Expression parse_int(Parser *p)
     int val = atoi(buffer);
     free(buffer);
 
-    Int_Expression iexpr = {
+    int_expr->expr.int_expression = (Int_Expression) {
         .value = val
     };
-    return iexpr;
 }
 
-Float_Expression parse_float(Parser *p)
+void parse_float(Parser *p, Expression *float_expr)
 {
     // TODO(HS): handle integers which are too long string wise
     size_t slen = p->cur_token.literal.length;
@@ -403,37 +395,34 @@ Float_Expression parse_float(Parser *p)
     float val = (float) atof(buffer);
     free(buffer);
 
-    Float_Expression fexpr = {
+    float_expr->expr.float_expression = (Float_Expression) {
         .value = val
     };
-    return fexpr;
 }
 
-Boolean_Expression parse_boolean(Parser *p)
+void parse_boolean(Parser *p, Expression *bool_expr)
 {
-    Boolean_Expression expr = {
+    bool_expr->expr.boolean_expression = (Boolean_Expression) {
         .value = p->cur_token.kind == TK_TRUE ? true : false
     };
-    return expr;
 }
 
 // TODO(HS): better allocation strategy for expressions
 // TODO(HS): parse prefix op for idents (& call expr?)
-Prefix_Expression parse_prefix_expression(Parser *p)
+void parse_prefix_expression(Parser *p, Expression *prefix_expr)
 {
     Token op = p->cur_token;
-    Prefix_Expression expr = {0};
 
     switch (op.kind)
     {
         case TK_MINUS:
         {
-            expr.op = '-';
+            prefix_expr->expr.prefix_expression.op = '-';
         } break;
 
         case TK_BANG:
         {
-            expr.op = '!';
+            prefix_expr->expr.prefix_expression.op = '!';
         } break;
 
         default:
@@ -443,54 +432,58 @@ Prefix_Expression parse_prefix_expression(Parser *p)
     }
 
     parser_next_token(p);
-    Expression rhs = parse_expression(p, PREFIX);
+    Expression rhs;
+    parse_expression(p, &rhs, PREFIX);
 
-    expr.rhs = malloc(sizeof(Expression));
-    assert(expr.rhs && "Failed to allocate memory for expression");
-    memcpy(expr.rhs, &rhs, sizeof(Expression));
-
-    return expr;
+    prefix_expr->expr.prefix_expression.rhs = malloc(sizeof(Expression));
+    assert(prefix_expr->expr.prefix_expression.rhs && "Failed to allocate memory for expression");
+    memcpy(prefix_expr->expr.prefix_expression.rhs, &rhs, sizeof(Expression));
 }
 
-Expression parse_infix_expression(Parser *p, Expression *lhs)
+void parse_infix_expression(Parser *p, Expression *expr)
 {
-    Expression expr = {
+    // NOTE(HS): we create this on the stack later, and later override the passed
+    // in expression with the value of this. Done this way to avoid extra allocations
+    // and potential errors thenceforth.
+    Expression infix_expr = {
         .kind = AST_INFIX_EXPRESSION,
         .expr.infix_expression = {
-            .op = p->cur_token.kind
+            .op = p->cur_token.kind,
         }
     };
 
-    expr.expr.infix_expression.lhs = malloc(sizeof(Expression));
-    assert(expr.expr.infix_expression.lhs);
-    expr.expr.infix_expression.rhs = malloc(sizeof(Expression));
-    assert(expr.expr.infix_expression.rhs);
-
-    memcpy(expr.expr.infix_expression.lhs, lhs, sizeof(Expression));
-
+    infix_expr.expr.infix_expression.lhs = malloc(sizeof(Expression));
+    assert(infix_expr.expr.infix_expression.lhs);
+    infix_expr.expr.infix_expression.rhs = malloc(sizeof(Expression));
+    assert(infix_expr.expr.infix_expression.rhs);
+  
     Operator_Precidence precidence = precidence_of(p->cur_token.kind);
     parser_next_token(p);
-    Expression rhs = parse_expression(p, precidence);
-    memcpy(expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
+    Expression rhs;
+    parse_expression(p, &rhs, precidence);
 
-    return expr;
+    memcpy(infix_expr.expr.infix_expression.lhs, expr, sizeof(Expression));
+    memcpy(infix_expr.expr.infix_expression.rhs, &rhs, sizeof(Expression));
+    memcpy(expr, &infix_expr, sizeof(Expression));
 }
 
-Expression parse_grouped_expression(Parser *p)
+void parse_grouped_expression(Parser *p, Expression *grouped_expr)
 {
     parser_next_token(p);
     
-    Expression expr = parse_expression(p, LOWEST);
+    Expression expr;
+    parse_expression(p, &expr, LOWEST);
 
     assert(peek_token_is(p, TK_RPAREN) && "Peeked token is not RParen");
     parser_next_token(p);
 
-    return expr;
+    memcpy(grouped_expr, &expr, sizeof(Expression));
 }
 
-If_Expression parse_if_expression(Parser *p)
+void parse_if_expression(Parser *p, Expression *if_expr)
 {
-    If_Expression expr = {
+    if_expr->expr.if_expression = (If_Expression) {
+        .condition = NULL,
         .consequence = NULL,
         .alternative = NULL
     };
@@ -501,7 +494,8 @@ If_Expression parse_if_expression(Parser *p)
     }
 
     parser_next_token(p);
-    Expression condition = parse_expression(p, LOWEST);
+    Expression condition;
+    parse_expression(p, &condition, LOWEST);
     if (!expect_peek(p, TK_RPAREN))
     {
         // TODO(HS): errors
@@ -514,13 +508,13 @@ If_Expression parse_if_expression(Parser *p)
 
     Block_Statement consequence = parse_block_statement(p);
 
-    expr.condition   = malloc(sizeof(Expression));
-    assert(expr.condition && "Failed to allocate IF expression condition");
-    memcpy(expr.condition, &condition, sizeof(Expression));
+    if_expr->expr.if_expression.condition = malloc(sizeof(Expression));
+    assert(if_expr->expr.if_expression.condition && "Failed to allocate IF expression condition");
+    memcpy(if_expr->expr.if_expression.condition, &condition, sizeof(Expression));
 
-    expr.consequence = malloc(sizeof(Block_Statement));
-    assert(expr.condition && "Failed to allocate IF expression consequence");
-    memcpy(expr.consequence, &consequence, sizeof(Block_Statement));
+    if_expr->expr.if_expression.consequence = malloc(sizeof(Block_Statement));
+    assert(if_expr->expr.if_expression.condition && "Failed to allocate IF expression consequence");
+    memcpy(if_expr->expr.if_expression.consequence, &consequence, sizeof(Block_Statement));
 
     Block_Statement alternative;
     if (peek_token_is(p, TK_ELSE))
@@ -533,12 +527,10 @@ If_Expression parse_if_expression(Parser *p)
 
         alternative = parse_block_statement(p);
 
-        expr.alternative = malloc(sizeof(Block_Statement));
-        assert(expr.condition && "Failed to allocate IF expression alternative");
-        memcpy(expr.alternative, &alternative, sizeof(Block_Statement));
+        if_expr->expr.if_expression.alternative = malloc(sizeof(Block_Statement));
+        assert(if_expr->expr.if_expression.condition && "Failed to allocate IF expression alternative");
+        memcpy(if_expr->expr.if_expression.alternative, &alternative, sizeof(Block_Statement));
     }
-
-    return expr;
 }
 
 Block_Statement parse_block_statement(Parser *p)
@@ -596,8 +588,9 @@ Parameters parse_function_parameters(Parser *p)
     params.idents = malloc(sizeof(Ident_Expression) * params.capacity);
 
     // parse first ident
-    Ident_Expression ie = parse_ident(p);
-    memcpy(params.idents, &ie, sizeof(Ident_Expression));
+    Expression ident_expr;
+    parse_ident(p, &ident_expr);
+    memcpy(params.idents, &ident_expr.expr.ident_expression, sizeof(Ident_Expression));
     params.len += 1;
 
     // parse remaining idents
@@ -617,8 +610,8 @@ Parameters parse_function_parameters(Parser *p)
             params.capacity = new_capacity;
         }
 
-        ie = parse_ident(p);
-        memcpy(&params.idents[params.len], &ie, sizeof(Ident_Expression));
+        parse_ident(p, &ident_expr);
+        memcpy(&params.idents[params.len], &ident_expr.expr.ident_expression, sizeof(Ident_Expression));
         params.len += 1;
     }
 
@@ -639,23 +632,19 @@ Parameters parse_function_parameters(Parser *p)
     return params;
 }
 
-Function_Expression parse_function(Parser *p)
+void parse_function(Parser *p, Expression *func_expr)
 {
-    Function_Expression fexpr;
-
     // TODO(HS): errors
     if (!expect_peek(p, TK_LPAREN))
     {}
 
-    fexpr.parameters = parse_function_parameters(p);
+    func_expr->expr.function_expression.parameters = parse_function_parameters(p);
 
     // TODO(HS): errors
     if (!expect_peek(p, TK_LBRACE))
     {}
 
     Block_Statement bs = parse_block_statement(p);
-    fexpr.body = malloc(sizeof(Block_Statement));
-    memcpy(fexpr.body, &bs, sizeof(Block_Statement));
-
-    return fexpr;
+    func_expr->expr.function_expression.body = malloc(sizeof(Block_Statement));
+    memcpy(func_expr->expr.function_expression.body, &bs, sizeof(Block_Statement));
 }

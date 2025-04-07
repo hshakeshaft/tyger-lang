@@ -37,18 +37,18 @@ Statement parse_var_statement(Parser *p);
 Statement parse_return_statement(Parser *p);
 Statement parse_expression_statement(Parser *p);
 
-Expression parse_expression(Parser *p, Operator_Precidence precidence);
+void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence);
 
-Ident_Expression parse_ident(Parser *p);
-Int_Expression parse_int(Parser *p);
-Float_Expression parse_float(Parser *p);
-Boolean_Expression parse_boolean(Parser *p);
-Prefix_Expression parse_prefix_expression(Parser *p);
-Expression parse_infix_expression(Parser *p, Expression *lhs);
-Expression parse_grouped_expression(Parser *p);
-If_Expression parse_if_expression(Parser *p);
+void parse_ident(Parser *p, Expression *ident_expr);
+void parse_int(Parser *p, Expression *int_expr);
+void parse_float(Parser *p, Expression *float_expr);
+void parse_boolean(Parser *p, Expression *bool_expr);
+void parse_prefix_expression(Parser *p, Expression *prefix_expr);
+void parse_infix_expression(Parser *p, Expression *expr);
+void parse_grouped_expression(Parser *p, Expression *grouped_expr);
+void parse_if_expression(Parser *p, Expression *if_expr);
 Block_Statement parse_block_statement(Parser *p);
 Parameters parse_function_parameters(Parser *p);
-Function_Expression parse_function(Parser *p);
+void parse_function(Parser *p, Expression *func_expr);
 
 #endif // TYGER_PARSER_INTERNAL_H_

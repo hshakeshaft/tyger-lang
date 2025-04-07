@@ -80,6 +80,7 @@ typedef struct
     Block_Statement *alternative;
 } If_Expression;
 
+// TODO(HS): conform to dynamic array "interface"
 typedef struct
 {
     size_t len;
