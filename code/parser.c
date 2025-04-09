@@ -105,13 +105,11 @@ inline bool expect_peek(Parser *p, Token_Kind kind)
 Program parser_parse_program(Parser *p)
 {
     Program prog = {0};
-    // program_init(&prog);
     da_init(Statement, &prog.statements);
 
     while (p->cur_token.kind != TK_EOF)
     {
         Statement stmt = parse_statement(p);
-        // program_add_statement(&prog, &stmt);
         da_append(Statement, &prog.statements, &stmt);
         parser_next_token(p);
     }
@@ -121,6 +119,8 @@ Program parser_parse_program(Parser *p)
 
 void program_free(Program *prog)
 {
+    // TODO(HS): iterate over all statements and free linked memory, **then** free
+    // the program
     da_free(&prog->statements);
 }
 
@@ -185,7 +185,7 @@ Statement parse_statement(Parser *p)
     {
         case TK_VAR:
         {
-            stmt = parse_var_statement(p);
+            parse_var_statement(p, &stmt);
         } break;
 
         case TK_RETURN:
@@ -202,44 +202,37 @@ Statement parse_statement(Parser *p)
 }
 
 // TODO(HS): better allocation strategy for idents
-Statement parse_var_statement(Parser *p)
+void parse_var_statement(Parser *p, Statement *stmt)
 {
-    Statement stmt;
-
+    // TODO(HS): return error
     if (!expect_peek(p, TK_IDENT))
-    {
-        stmt = make_illegal(p);
-        return stmt;
-    }
+    {}
 
-    stmt.kind = AST_VAR_STATEMENT;
+    stmt->kind = AST_VAR_STATEMENT;
 
     size_t slen = p->cur_token.literal.length;
     char *buffer = malloc(sizeof(char) * (slen + 1));
     strncpy(buffer, p->cur_token.literal.str, slen);
     buffer[p->cur_token.literal.length] = '\0';
 
-    stmt.stmt.var_statement = (Var_Statement) {
+    stmt->stmt.var_statement = (Var_Statement) {
         .ident = buffer,
     };
 
+    // TODO(HS): return error
     if (!expect_peek(p, TK_ASSIGN))
     {
         free(buffer);
-        stmt = make_illegal(p);
-        return stmt;
     }
 
     parser_next_token(p);
 
-    parse_expression(p, &stmt.stmt.var_statement.expression, LOWEST);
+    parse_expression(p, &stmt->stmt.var_statement.expression, LOWEST);
 
     if (peek_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
     }
-
-    return stmt;
 }
 
 // TODO(HS): expression needs to be pointer

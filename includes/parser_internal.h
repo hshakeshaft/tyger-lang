@@ -33,7 +33,7 @@ void block_add_statement(Block_Statement *bs, const Statement *stmt);
 Statement make_illegal(Parser *p);
 
 Statement parse_statement(Parser *p);
-Statement parse_var_statement(Parser *p);
+void parse_var_statement(Parser *p, Statement *stmt);
 Statement parse_return_statement(Parser *p);
 Statement parse_expression_statement(Parser *p);
 
