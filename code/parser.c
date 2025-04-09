@@ -195,7 +195,7 @@ Statement parse_statement(Parser *p)
 
         default:
         { 
-            stmt = parse_expression_statement(p);
+            parse_expression_statement(p, &stmt);
         } break;
     }
     return stmt;
@@ -256,11 +256,12 @@ void parse_return_statement(Parser *p, Statement *stmt)
     }
 }
 
-Statement parse_expression_statement(Parser *p)
+void parse_expression_statement(Parser *p, Statement *stmt)
 {
     Expression expr;
     parse_expression(p, &expr, LOWEST);
-    Statement stmt = {
+
+    *stmt = (Statement) {
         .kind = AST_EXPRESSION_STATEMENT,
         .stmt.expression_statement = (Expression_Statement) {
             .expression = expr
@@ -271,8 +272,6 @@ Statement parse_expression_statement(Parser *p)
     {
         parser_next_token(p);
     }
-    
-    return stmt;
 }
 
 void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence)
