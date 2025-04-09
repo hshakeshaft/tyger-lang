@@ -34,7 +34,7 @@ Statement make_illegal(Parser *p);
 
 Statement parse_statement(Parser *p);
 void parse_var_statement(Parser *p, Statement *stmt);
-Statement parse_return_statement(Parser *p);
+void parse_return_statement(Parser *p, Statement *stmt);
 Statement parse_expression_statement(Parser *p);
 
 void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence);

@@ -190,7 +190,7 @@ Statement parse_statement(Parser *p)
 
         case TK_RETURN:
         {
-            stmt = parse_return_statement(p);
+            parse_return_statement(p, &stmt);
         } break;
 
         default:
@@ -236,28 +236,24 @@ void parse_var_statement(Parser *p, Statement *stmt)
 }
 
 // TODO(HS): expression needs to be pointer
-Statement parse_return_statement(Parser *p)
+void parse_return_statement(Parser *p, Statement *stmt)
 {
-    Statement stmt;
-    stmt.kind = AST_RETURN_STATEMENT;
+    stmt->kind = AST_RETURN_STATEMENT;
     
     parser_next_token(p);
 
     if (cur_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
-       return stmt;
     }
 
-    parse_expression(p, &stmt.stmt.return_statement.expression, LOWEST);
+    parse_expression(p, &stmt->stmt.return_statement.expression, LOWEST);
 
     // TODO(HS): errors
     if (peek_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
     }
-
-    return stmt;
 }
 
 Statement parse_expression_statement(Parser *p)
