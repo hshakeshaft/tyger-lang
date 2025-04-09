@@ -30,12 +30,13 @@ void parser_next_token(Parser *p);
 
 void block_add_statement(Block_Statement *bs, const Statement *stmt);
 
+// TODO(HS): remove and replace with error return
 Statement make_illegal(Parser *p);
 
-Statement parse_statement(Parser *p);
-Statement parse_var_statement(Parser *p);
-Statement parse_return_statement(Parser *p);
-Statement parse_expression_statement(Parser *p);
+void parse_statement(Parser *p, Statement *stmt);
+void parse_var_statement(Parser *p, Statement *stmt);
+void parse_return_statement(Parser *p, Statement *stmt);
+void parse_expression_statement(Parser *p, Statement *stmt);
 
 void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence);
 

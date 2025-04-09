@@ -105,13 +105,12 @@ inline bool expect_peek(Parser *p, Token_Kind kind)
 Program parser_parse_program(Parser *p)
 {
     Program prog = {0};
-    // program_init(&prog);
     da_init(Statement, &prog.statements);
 
     while (p->cur_token.kind != TK_EOF)
     {
-        Statement stmt = parse_statement(p);
-        // program_add_statement(&prog, &stmt);
+        Statement stmt;
+        parse_statement(p, &stmt);
         da_append(Statement, &prog.statements, &stmt);
         parser_next_token(p);
     }
@@ -121,6 +120,8 @@ Program parser_parse_program(Parser *p)
 
 void program_free(Program *prog)
 {
+    // TODO(HS): iterate over all statements and free linked memory, **then** free
+    // the program
     da_free(&prog->statements);
 }
 
@@ -178,100 +179,88 @@ void ast_free_node(Statement *stmt)
     }
 }
 
-Statement parse_statement(Parser *p)
+void parse_statement(Parser *p, Statement *stmt)
 {
-    Statement stmt = {0};
     switch (p->cur_token.kind)
     {
         case TK_VAR:
         {
-            stmt = parse_var_statement(p);
+            parse_var_statement(p, stmt);
         } break;
 
         case TK_RETURN:
         {
-            stmt = parse_return_statement(p);
+            parse_return_statement(p, stmt);
         } break;
 
         default:
         { 
-            stmt = parse_expression_statement(p);
+            parse_expression_statement(p, stmt);
         } break;
     }
-    return stmt;
 }
 
 // TODO(HS): better allocation strategy for idents
-Statement parse_var_statement(Parser *p)
+void parse_var_statement(Parser *p, Statement *stmt)
 {
-    Statement stmt;
-
+    // TODO(HS): return error
     if (!expect_peek(p, TK_IDENT))
-    {
-        stmt = make_illegal(p);
-        return stmt;
-    }
+    {}
 
-    stmt.kind = AST_VAR_STATEMENT;
+    stmt->kind = AST_VAR_STATEMENT;
 
     size_t slen = p->cur_token.literal.length;
     char *buffer = malloc(sizeof(char) * (slen + 1));
     strncpy(buffer, p->cur_token.literal.str, slen);
     buffer[p->cur_token.literal.length] = '\0';
 
-    stmt.stmt.var_statement = (Var_Statement) {
+    stmt->stmt.var_statement = (Var_Statement) {
         .ident = buffer,
     };
 
+    // TODO(HS): return error
     if (!expect_peek(p, TK_ASSIGN))
     {
         free(buffer);
-        stmt = make_illegal(p);
-        return stmt;
     }
 
     parser_next_token(p);
 
-    parse_expression(p, &stmt.stmt.var_statement.expression, LOWEST);
+    parse_expression(p, &stmt->stmt.var_statement.expression, LOWEST);
 
     if (peek_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
     }
-
-    return stmt;
 }
 
 // TODO(HS): expression needs to be pointer
-Statement parse_return_statement(Parser *p)
+void parse_return_statement(Parser *p, Statement *stmt)
 {
-    Statement stmt;
-    stmt.kind = AST_RETURN_STATEMENT;
+    stmt->kind = AST_RETURN_STATEMENT;
     
     parser_next_token(p);
 
     if (cur_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
-       return stmt;
     }
 
-    parse_expression(p, &stmt.stmt.return_statement.expression, LOWEST);
+    parse_expression(p, &stmt->stmt.return_statement.expression, LOWEST);
 
     // TODO(HS): errors
     if (peek_token_is(p, TK_SEMICOLON))
     {
         parser_next_token(p);
     }
-
-    return stmt;
 }
 
-Statement parse_expression_statement(Parser *p)
+void parse_expression_statement(Parser *p, Statement *stmt)
 {
     Expression expr;
     parse_expression(p, &expr, LOWEST);
-    Statement stmt = {
+
+    *stmt = (Statement) {
         .kind = AST_EXPRESSION_STATEMENT,
         .stmt.expression_statement = (Expression_Statement) {
             .expression = expr
@@ -282,8 +271,6 @@ Statement parse_expression_statement(Parser *p)
     {
         parser_next_token(p);
     }
-    
-    return stmt;
 }
 
 void parse_expression(Parser *p, Expression *expr, Operator_Precidence precidence)
@@ -544,7 +531,8 @@ Block_Statement parse_block_statement(Parser *p)
     parser_next_token(p);
     while (!cur_token_is(p, TK_RBRACE) && !cur_token_is(p, TK_EOF))
     {
-        Statement stmt = parse_statement(p);
+        Statement stmt;
+        parse_statement(p, &stmt);
         block_add_statement(&block, &stmt);
         parser_next_token(p);
     }
