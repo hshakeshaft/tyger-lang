@@ -109,7 +109,8 @@ Program parser_parse_program(Parser *p)
 
     while (p->cur_token.kind != TK_EOF)
     {
-        Statement stmt = parse_statement(p);
+        Statement stmt;
+        parse_statement(p, &stmt);
         da_append(Statement, &prog.statements, &stmt);
         parser_next_token(p);
     }
@@ -178,27 +179,25 @@ void ast_free_node(Statement *stmt)
     }
 }
 
-Statement parse_statement(Parser *p)
+void parse_statement(Parser *p, Statement *stmt)
 {
-    Statement stmt = {0};
     switch (p->cur_token.kind)
     {
         case TK_VAR:
         {
-            parse_var_statement(p, &stmt);
+            parse_var_statement(p, stmt);
         } break;
 
         case TK_RETURN:
         {
-            parse_return_statement(p, &stmt);
+            parse_return_statement(p, stmt);
         } break;
 
         default:
         { 
-            parse_expression_statement(p, &stmt);
+            parse_expression_statement(p, stmt);
         } break;
     }
-    return stmt;
 }
 
 // TODO(HS): better allocation strategy for idents
@@ -532,7 +531,8 @@ Block_Statement parse_block_statement(Parser *p)
     parser_next_token(p);
     while (!cur_token_is(p, TK_RBRACE) && !cur_token_is(p, TK_EOF))
     {
-        Statement stmt = parse_statement(p);
+        Statement stmt;
+        parse_statement(p, &stmt);
         block_add_statement(&block, &stmt);
         parser_next_token(p);
     }
